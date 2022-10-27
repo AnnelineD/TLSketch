@@ -36,11 +36,11 @@ def dlinstance_from_tarski(lan: tarski.fol.FirstOrderLanguage) -> dlplan.Instanc
 
 def tmodel_to_dlstate(state: TModel, i: dlplan.InstanceInfo) -> dlplan.State:
     """function rewrites tarski states to dlplan states"""
-    return dlplan.State(i, [i.get_atom(i.get_atom_idx(a.__str__())) for a in state.as_atoms()])
+    return dlplan.State(i, [i.get_atom(i.get_atom_idx(str(a))) for a in state.as_atoms()])
 
 
 def tmodels_to_dlstates(states: set[TModel], i: dlplan.InstanceInfo) -> set[dlplan.State]:
-    return set([tmodel_to_dlstate(tstate, i) for tstate in states])
+    return {tmodel_to_dlstate(tstate, i) for tstate in states}
 
 
 
