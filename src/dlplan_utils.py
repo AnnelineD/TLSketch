@@ -21,3 +21,13 @@ def show_effect(e: dlplan.BaseEffect, representation: str = None) -> str:
         case "(:e_n_dec": return f"{representation}↓" if representation else f"n{idx}↓"
         case "(:e_n_bot": return f"{representation}?" if representation else f"n{idx}?"
         case _: return "invalid"  # TODO raise error
+
+
+def show_rule(r: dlplan.Rule) -> str:
+    return \
+        f"{{{', '.join(list(map(show_condition, r.get_conditions())))}}} -> " \
+        f"{{{', '.join(list(map(show_effect, r.get_effects())))}}}"
+
+
+def show_sketch(s: dlplan.Policy) -> str:
+    return '\n'.join([show_rule(r) for r in s.get_rules()])
