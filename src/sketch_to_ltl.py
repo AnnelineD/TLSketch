@@ -1,4 +1,5 @@
 import dlplan
+import ltl
 from dlplan import Policy
 from ltl import *
 from functools import reduce
@@ -13,19 +14,29 @@ class NumLTL:
 
 
 def to_num_ltl(policy: Policy) -> NumLTL:
-    # TODO
-    # sort policy rules in exclusive groups
-    # for each group make cond -> effect ltl statement
-        # combinations of options of precondition values
+    curr_precondition_merge: list[tuple[list[dlplan.BaseCondition], list[list[dlplan.BaseEffect]]]] = list()
+    new_precondition_merge: list[tuple[list[dlplan.BaseCondition], list[list[dlplan.BaseEffect]]]] = list()
+    rules = policy.get_rules()
+    for rule in rules:
+        if curr_precondition_merge:
+            for e, ruleset in enumerate(curr_precondition_merge):
+                if rule.get_conditions() == ruleset[0]:
+                    ruleset[1].append(rule.get_effects())
+                else:
+                    new_precondition_merge.append((rule.get_conditions(), rule.get_effects()))
+        else:
+            new_precondition_merge.append((rule.get_conditions(), [rule.get_effects()]))
+        curr_precondition_merge = new_precondition_merge.copy()
+    print("yes", new_precondition_merge)
 
+    # TODO merge rules that have independent preconditions
     ltl_rules = list[tuple[LTLFormula, LTLFormula]]()
-    # step 1: convert each rule to LTL separately
-    for rule in policy.get_rules():
-        cs: list[dlplan.BaseCondition] = rule.get_conditions()
-        es: list[dlplan.BaseEffect] = rule.get_effects()
-
+    # for rule in policy.get_rules():
+    #     cs: list[dlplan.BaseCondition] = rule.get_conditions()
+    #     es: list[dlplan.BaseEffect] = rule.get_effects()
+    for cs, es in new_precondition_merge:
         c_ltl: LTLFormula = reduce(And, map(lambda c: Var(c), cs), Top())  # TODO make special kind of var
-        e_ltl: LTLFormula = reduce(And, map(lambda e: Var(e), es), Top())
+        e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(lambda e: Var(e), le), Top()), es), Bottom())
 
         ltl_rules.append((c_ltl, e_ltl))
 
