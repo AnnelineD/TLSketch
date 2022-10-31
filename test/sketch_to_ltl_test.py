@@ -57,12 +57,12 @@ class ToLTLTest(unittest.TestCase):
         # hack because equality between conditions and effects is not well defined;
         # the condition in a rule is not equal to the condition that was put into the rule
         # i.e. in the following c_h_neg != self.h_neg_condition_0 which is counter intuitive
-        c_h_neg = self.p1.get_rules()[0].get_conditions()[0]
-        c_n_gt = self.p1.get_rules()[0].get_conditions()[1]
-        c_h_pos = self.p1.get_rules()[1].get_conditions()[0]
+        h = self.p1.get_rules()[0].get_conditions()[0].get_base_feature()
+        n = self.p1.get_rules()[0].get_conditions()[1].get_base_feature()
 
-        self.assertEqual(num_ltl_p1.conditions,
-                         [Top() & Var(c_h_neg) & Var(c_n_gt), (Top() & Var(c_h_pos)) & Var(c_n_gt)])
+        self.assertEqual([Top() & Var(CNegative(h)) & Var(CGreater(n)),
+                          (Top() & Var(CPositive(h))) & Var(CGreater(n))],
+                         num_ltl_p1.conditions)
 
     def test_show(self):  # TODO maybe move this test to a separate file?
         self.assertEqual(show_condition(self.h_neg_condition_0, "H"), "¬H")
