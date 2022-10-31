@@ -13,12 +13,19 @@ class ToLTLTest(unittest.TestCase):
         vocabulary_info = dlplan.VocabularyInfo()
         vocabulary_info.add_predicate("unary", 1)
         factory = dlplan.SyntacticElementFactory(vocabulary_info)
-        h = factory.parse_boolean("b_empty(c_primitive(unary,0))")
-        n = factory.parse_numerical("n_count(c_primitive(unary,0))")
+        self.a = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.b = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.c = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.h = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+
+        self.n = factory.parse_numerical("n_count(c_primitive(unary,0))")
+        self.m = factory.parse_numerical("n_count(c_primitive(unary,0))")
+        self.o = factory.parse_numerical("n_count(c_primitive(unary,0))")
+
 
         builder = dlplan.PolicyBuilder()
-        b_h = builder.add_boolean_feature(h)
-        b_n = builder.add_numerical_feature(n)
+        b_h = builder.add_boolean_feature(self.h)
+        b_n = builder.add_numerical_feature(self.n)
 
         self.h_neg_condition_0 = builder.add_neg_condition(b_h)     # con: ¬h
         self.h_pos_condition_0 = builder.add_pos_condition(b_h)     # con: h
@@ -69,6 +76,40 @@ class ToLTLTest(unittest.TestCase):
         self.assertEqual(show_effect(self.n_dec_effect_0, "n"), "n↓")
         self.assertEqual(show_effect(self.n_inc_effect_0, "n"), "n↑")
         self.assertEqual(show_effect(self.n_bot_effect_0, "n"), "n?")
+
+    def test_merge_rules(self):
+        # same conditions
+        r1 = RuleTupleRepr([CPositive(self.h)], [[EDecr(self.n)]])
+        r2 = RuleTupleRepr([CPositive(self.h)], [[ENegative(self.h)]])
+        self.assertEqual([RuleTupleRepr([CPositive(self.h)], [[EDecr(self.n)], [ENegative(self.h)]])],
+                         merge_rules(r1, r2))
+
+        # conditions of one rule are a subset of the conditions of the other rule
+        r3 = RuleTupleRepr([CPositive(self.h), CZero(self.n)], [[ENegative(self.h)]])
+        r4 = RuleTupleRepr([CPositive(self.h)], [[EIncr(self.n)]])
+
+        # the non overlapping conditions are independent
+        r5 = RuleTupleRepr([CPositive(self.a), CPositive(self.b)], [[CNegative(self.a)]])
+        r6 = RuleTupleRepr([CPositive(self.a), CPositive(self.c)], [[CNegative(self.b)]])
+        merged56 = [RuleTupleRepr({CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
+                    RuleTupleRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
+                    RuleTupleRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]])]
+        self.assertEqual(merged56, merge_rules(r5, r6))
+
+        # all conditions are independent
+        r7 = RuleTupleRepr({CPositive(self.h)}, [[ENegative(self.h)]])
+        r8 = RuleTupleRepr({CGreater(self.n)}, [[EIncr(self.n)]])
+        merged78 = [
+            RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)]]),
+            RuleTupleRepr({CNegative(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
+            RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])
+        ]
+
+        self.assertEqual(merged78, merge_rules(r7, r8))
+
+        # the rules shouldn't be merged
+
+
 
 
 if __name__ == '__main__':
