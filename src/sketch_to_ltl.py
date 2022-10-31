@@ -30,7 +30,7 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
             mr = merge_rules(m, r_conv)
             if mr:
                 merged.remove(m)
-                merged += [mr]
+                merged += mr
                 added = True
                 break
 
@@ -38,6 +38,7 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
             merged += [r_conv]
 
     return merged
+
 
 # FIXME the current test for this function fails
 def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
