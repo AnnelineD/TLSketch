@@ -16,6 +16,9 @@ class NumLTL:
         self.rules = rules
         self.conditions = [r[0] for r in self.rules]
 
+    def show(self) -> str:
+        return "\n".join(Then(c, e).show() for c, e in self.rules)
+
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
     return RuleTupleRepr([cond_from_dlplan(c) for c in rule.get_conditions()], [[eff_from_dlplan(e) for e in rule.get_effects()]])
@@ -43,12 +46,8 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
 # FIXME the current test for this function fails
 def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
     ruletups: list[RuleTupleRepr] = policy_to_rule_tuples(policy)
-    print(ruletups)
 
     ltl_rules = list[tuple[LTLFormula, LTLFormula]]()
-    # for rule in policy.get_rules():
-    #     cs: list[dlplan.BaseCondition] = rule.get_conditions()
-    #     es: list[dlplan.BaseEffect] = rule.get_effects()
     for r in ruletups:
         c_ltl: LTLFormula = reduce(And, map(Var, r.conditions), Top())  # TODO make special kind of var
         e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le), Top()), r.effects), Bottom())
@@ -78,7 +77,7 @@ def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
     excl_fs_2 = get_condition_features(exclusive_c2)
 
     if not excl_fs_1:
-        print("NOT IMPLEMENTED")
+        print("NOT IMPLEMENTED")  # TODO handle these cases
     if not excl_fs_2:
         print("NOT IMPLEMENTED")
 
