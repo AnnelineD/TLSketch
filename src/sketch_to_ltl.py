@@ -1,16 +1,15 @@
 import dlplan
 import ltl
-from dlplan import Policy
 from ltl import *
 from functools import reduce
 from collections import namedtuple
 from src.rule_representation import *
 
-policy: Policy
 
 #  conditions: list[Condition]
 #  effects:  list[list[Effect]]
 RuleTupleRepr = namedtuple("Rule", "conditions effects")
+
 
 class NumLTL:
     def __init__(self, rules: list[tuple[LTLFormula, LTLFormula]]):
@@ -18,8 +17,30 @@ class NumLTL:
         self.conditions = [r[0] for r in self.rules]
 
 
+def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
+    return RuleTupleRepr([cond_from_dlplan(c) for c in rule.get_conditions()], [[eff_from_dlplan(e) for e in rule.get_effects()]])
+
+
+def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
+    merged = list[RuleTupleRepr]()
+    for rule in policy.get_rules():
+        added = False
+        r_conv: RuleTupleRepr = dlplan_rule_to_tuple(rule)
+        for m in merged:
+            mr = merge_rules(m, r_conv)
+            if mr:
+                merged.remove(m)
+                merged += [mr]
+                added = True
+                break
+
+        if not added:
+            merged += [r_conv]
+
+    return merged
+
 # FIXME the current test for this function fails
-def to_num_ltl(policy: Policy) -> NumLTL:
+def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
     curr_precondition_merge: list[tuple[list[dlplan.BaseCondition], list[list[dlplan.BaseEffect]]]] = list()
     new_precondition_merge: list[tuple[list[dlplan.BaseCondition], list[list[dlplan.BaseEffect]]]] = list()
     rules = policy.get_rules()
@@ -91,4 +112,6 @@ def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
         # c1 and c2 are true
         m3 = RuleTupleRepr(c_intersect.union(true_c1).union(true_c2), r1.effects + r2.effects)
         return [m1, m2, m3]
+
+    return []
 
