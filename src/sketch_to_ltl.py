@@ -54,7 +54,7 @@ def get_condition_features(cs: set[Condition]) -> set[Feature]:
     return {c.feature for c in cs}
 
 
-def merge_e_n_o(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
+def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
     #  check overlapping
     c1: set[Condition] = set(r1.conditions)
     c2: set[Condition] = set(r2.conditions)
