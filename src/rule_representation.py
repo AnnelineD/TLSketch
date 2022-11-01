@@ -38,6 +38,17 @@ def cond_from_dlplan(c: dlplan.BaseCondition) -> Condition:
 class Effect:
     feature: any
 
+    def show(self, feature_repr: dict[Feature, str] = None):
+        r = self.feature.get_index() if not feature_repr else feature_repr[self.feature]
+        match self:
+            case EPositive(bf): return f"b{r}"
+            case ENegative(bf): return f"¬b{r}"
+            case EBAny(bf): return f"{r}?"
+            case EIncr(nf): return f"n{r}↑"
+            case EDecr(nf): return f"n{r}↓"
+            case ENAny(nf): return f"n{r}?"
+            case _: return "invalid"  # TODO raise error
+
 
 def eff_from_dlplan(e: dlplan.BaseEffect) -> Effect:
     match e.str()[:9]:
