@@ -15,9 +15,19 @@ class NumLTL:
     def __init__(self, rules: list[tuple[LTLFormula, LTLFormula]]):
         self.rules = rules
         self.conditions = [r[0] for r in self.rules]
+        self.goal = Var("goal")
+        self.dead = Not(Finally(self.goal))
+        self.ltl_conditions = Globally(reduce(Or, self.conditions) | self.dead | self.goal)
+        self.reach_goal = Finally(self.goal)
+
+        self.full_rules = [Then(c, Until(Not(eff & self.dead), eff & Not(self.dead))) for c, eff in self.rules]
+
 
     def show(self) -> str:
-        return "\n".join(Then(c, e).show() for c, e in self.rules)
+        return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
+
+    def to_formula(self, bounds, goal) -> LTLFormula:
+        pass
 
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
