@@ -22,7 +22,7 @@ def show_effect(e: dlplan.BaseEffect, representation: str = None) -> str:
         case "(:e_n_bot": return f"{representation}?" if representation else f"n{idx}?"
         case _: return "invalid"  # TODO raise error
 
-
+# TODO write tests for the following functions
 def show_rule(r: dlplan.Rule) -> str:
     return \
         f"{{{', '.join(list(map(show_condition, r.get_conditions())))}}} -> " \
