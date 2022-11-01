@@ -60,8 +60,8 @@ class ToLTLTest(unittest.TestCase):
         h = self.p1.get_rules()[0].get_conditions()[0].get_base_feature()
         n = self.p1.get_rules()[0].get_conditions()[1].get_base_feature()
 
-        self.assertEqual([Top() & Var(CNegative(h)) & Var(CGreater(n)),
-                          (Top() & Var(CPositive(h))) & Var(CGreater(n))],
+        self.assertEqual([Var(CNegative(h)) & Var(CGreater(n)),
+                          (Var(CPositive(h))) & Var(CGreater(n))],
                          num_ltl_p1.conditions)
 
     def test_show(self):  # TODO maybe move this test to a separate file?
