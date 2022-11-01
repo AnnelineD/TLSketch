@@ -1,5 +1,5 @@
 import unittest
-from src.conversions import *
+from src.transition_system.conversions import *
 
 
 class MyTestCase(unittest.TestCase):

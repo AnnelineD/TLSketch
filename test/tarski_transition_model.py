@@ -1,8 +1,6 @@
 import unittest
 
-from tarski.io import PDDLReader
-
-from src.tarski_transition_model import *
+from src.transition_system.tarski_transition_model import *
 
 
 class MyTestCase(unittest.TestCase):

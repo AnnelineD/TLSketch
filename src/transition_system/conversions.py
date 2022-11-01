@@ -1,7 +1,6 @@
-import tarski
 import dlplan
-from src.tarski_transition_model import *
-from src.tarski_manipulation import sort_constants, typed_permutations
+from src.transition_system.tarski_transition_model import *
+from src.transition_system.tarski_manipulation import sort_constants, typed_permutations
 
 
 def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str, int]:

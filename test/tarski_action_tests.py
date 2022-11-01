@@ -2,7 +2,7 @@ import unittest
 
 from tarski.io import PDDLReader
 
-from src.tarski_manipulation import *
+from src.transition_system.tarski_manipulation import *
 
 
 class MyTestCase(unittest.TestCase):

@@ -1,9 +1,6 @@
 import unittest
 
-from dlplan import PolicyReader
-
-from main import pddl_to_dlplan_states
-from src.sketch_to_ltl import *
+from src.logics.sketch_to_ltl import *
 from src.dlplan_utils import *
 
 

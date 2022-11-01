@@ -1,9 +1,7 @@
-import dlplan
-import ltl
 from ltl import *
 from functools import reduce
 from collections import namedtuple
-from src.rule_representation import *
+from src.logics.rule_representation import *
 
 
 #  conditions: list[Condition]
