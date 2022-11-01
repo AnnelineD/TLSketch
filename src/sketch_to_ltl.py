@@ -48,8 +48,8 @@ def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
 
     ltl_rules = list[tuple[LTLFormula, LTLFormula]]()
     for r in ruletups:
-        c_ltl: LTLFormula = reduce(And, map(Var, r.conditions), Top())  # TODO make special kind of var
-        e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le), Top()), r.effects), Bottom())
+        c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
+        e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
 
         ltl_rules.append((c_ltl, e_ltl))
 
