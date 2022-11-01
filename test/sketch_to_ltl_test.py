@@ -87,6 +87,9 @@ class ToLTLTest(unittest.TestCase):
         # conditions of one rule are a subset of the conditions of the other rule
         r3 = RuleTupleRepr([CPositive(self.h), CZero(self.n)], [[ENegative(self.h)]])
         r4 = RuleTupleRepr([CPositive(self.h)], [[EIncr(self.n)]])
+        merged34 = [RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
+                    RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])]
+        self.assertEqual(merged34, merge_rules(r3, r4))
 
         # the non overlapping conditions are independent
         r5 = RuleTupleRepr([CPositive(self.a), CPositive(self.b)], [[CNegative(self.a)]])
@@ -108,6 +111,10 @@ class ToLTLTest(unittest.TestCase):
         self.assertEqual(merged78, merge_rules(r7, r8))
 
         # the rules shouldn't be merged
+        r9 = RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.a)]])
+        r10 = RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.b)]])
+
+        self.assertEqual([], merge_rules(r9, r10))
 
 
 

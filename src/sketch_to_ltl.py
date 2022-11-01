@@ -43,7 +43,6 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
     return merged
 
 
-# FIXME the current test for this function fails
 def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
     ruletups: list[RuleTupleRepr] = policy_to_rule_tuples(policy)
 
@@ -76,11 +75,6 @@ def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
     excl_fs_1 = get_condition_features(exclusive_c1)
     excl_fs_2 = get_condition_features(exclusive_c2)
 
-    if not excl_fs_1:
-        print("NOT IMPLEMENTED")  # TODO handle these cases
-    if not excl_fs_2:
-        print("NOT IMPLEMENTED")
-
     f_intersect = excl_fs_1.intersection(excl_fs_2)
 
     if not f_intersect:  # if the non overlapping conditions affect different features
@@ -89,15 +83,22 @@ def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
         false_c1: set[Condition] = {c.invert() for c in exclusive_c1}
         false_c2: set[Condition] = {c.invert() for c in exclusive_c2}
 
+        merged = []
+
         #  c1 is true but c2 not
-        m1 = RuleTupleRepr(c_intersect.union(true_c1).union(false_c2), r1.effects)
+        if true_c2:
+            m1 = RuleTupleRepr(c_intersect.union(true_c1).union(false_c2), r1.effects)
+            merged.append(m1)
 
         # c1 if false and c2 true
-        m2 = RuleTupleRepr(c_intersect.union(false_c1).union(true_c2), r2.effects)
+        if true_c1:
+            m2 = RuleTupleRepr(c_intersect.union(false_c1).union(true_c2), r2.effects)
+            merged.append(m2)
 
         # c1 and c2 are true
         m3 = RuleTupleRepr(c_intersect.union(true_c1).union(true_c2), r1.effects + r2.effects)
-        return [m1, m2, m3]
+        merged.append(m3)
+        return merged
 
     return []
 
