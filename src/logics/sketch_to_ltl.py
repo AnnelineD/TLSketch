@@ -1,6 +1,8 @@
 from ltl import *
 from functools import reduce
 from collections import namedtuple
+
+from src.logics.feature_vars import NumericalVar, BooleanVar
 from src.logics.rule_representation import *
 
 
@@ -25,7 +27,24 @@ class NumLTL:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
     def to_formula(self, bounds, goal) -> LTLFormula:
-        pass
+        bounded_rules: list[tuple[LTLFormula, LTLFormula]] = fill_in_bounds(self.rules, bounds)
+
+
+# TODO also fill in effects
+def fill_in_bounds(rules: list[tuple[LTLFormula, LTLFormula]], bounds: dict[dlplan.Numerical, int]) -> list[tuple[LTLFormula, LTLFormula]]:
+    def fill_in_condition(condition: LTLFormula) -> list[LTLFormula]:
+        vars: set[Condition] = condition.get_atoms()
+        conds = [condition]
+
+        for v in vars:
+            match v:
+                case CGreater(f): conds = [c.replace(Var(v), NumericalVar(f, i)) for i in range(1, bounds[f] + 1) for c in conds]
+                case CZero(f): conds = [c.replace(Var(v), NumericalVar(f, 0)) for c in conds]
+                case CPositive(f): conds = [c.replace(Var(v), BooleanVar(f, True)) for c in conds]
+                case CNegative(f): conds = [c.replace(Var(v), BooleanVar(f, False)) for c in conds]
+        return conds
+
+    c_filled_in = [(nc, e) for (c, e) in rules for nc in fill_in_condition(c)]
 
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:

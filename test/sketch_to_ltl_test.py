@@ -2,6 +2,7 @@ import unittest
 
 from src.logics.sketch_to_ltl import *
 from src.dlplan_utils import *
+from src.logics.feature_vars import *
 
 
 class ToLTLTest(unittest.TestCase):
@@ -16,7 +17,7 @@ class ToLTLTest(unittest.TestCase):
         self.h = factory.parse_boolean("b_empty(c_primitive(unary,0))")
 
         self.n = factory.parse_numerical("n_count(c_primitive(unary,0))")
-        self.m = factory.parse_numerical("n_count(c_primitive(unary,0))")
+        self.m = factory.parse_numerical("n_count(c_not(c_primitive(unary,0)))")
         self.o = factory.parse_numerical("n_count(c_primitive(unary,0))")
 
 
@@ -113,6 +114,11 @@ class ToLTLTest(unittest.TestCase):
 
         self.assertEqual([], merge_rules(r9, r10))
 
+    def test_bound_fill_in(self):
+        bound_dict = {self.n: 2, self.m: 2, self.o: 3}
+        nltl = NumLTL([(Var(CGreater(self.n)) & Var(CGreater(self.m)) & Var(CGreater(self.o)), Var(EDecr(self.n)))])
+
+        fill_in_bounds(nltl.rules, bound_dict)
 
 
 
