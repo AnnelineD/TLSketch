@@ -5,33 +5,49 @@ from collections import namedtuple
 from src.logics.feature_vars import NumericalVar, BooleanVar
 from src.logics.rule_representation import *
 
-
 #  conditions: list[Condition]
 #  effects:  list[list[Effect]]
 RuleTupleRepr = namedtuple("Rule", "conditions effects")
 
 
+@dataclass
+class LTLRule:
+    condition: LTLFormula
+    effect: LTLFormula
+
+    def get_condition_features(self) -> set:
+        return self.condition.get_atoms()
+
+    def get_effect_features(self) -> set:
+        return self.effect.get_atoms()
+
+    def get_features(self) -> set:
+        return self.get_condition_features().union(self.get_effect_features())
+
+    def show(self) -> str:
+        return f'Condition: {self.condition.show()}      Effect: {self.effect.show()}'
+
+
 class NumLTL:
-    def __init__(self, rules: list[tuple[LTLFormula, LTLFormula]]):
+    def __init__(self, rules: list[LTLRule]):
         self.rules = rules
-        self.conditions = [r[0] for r in self.rules]
+        self.conditions = [r.condition for r in self.rules]
         self.goal = Var("goal")
         self.dead = Not(Finally(self.goal))
         self.ltl_conditions = Globally(reduce(Or, self.conditions) | self.dead | self.goal)
         self.reach_goal = Finally(self.goal)
 
-        self.full_rules = [Then(c, Until(Not(eff & self.dead), eff & Not(self.dead))) for c, eff in self.rules]
-
+        self.full_rules = [Then(r.condition, Until(Not(r.effect & self.dead), r.effect & Not(self.dead))) for r in self.rules]
 
     def show(self) -> str:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
     def to_formula(self, bounds, goal) -> LTLFormula:
-        bounded_rules: list[tuple[LTLFormula, LTLFormula]] = fill_in_bounds(self.rules, bounds)
+        bounded_rules: list[LTLRule] = fill_in_bounds(self.rules, bounds)
 
 
 # TODO also fill in effects
-def fill_in_bounds(rules: list[tuple[LTLFormula, LTLFormula]], bounds: dict[dlplan.Numerical, int]) -> list[tuple[LTLFormula, LTLFormula]]:
+def fill_in_bounds(rules: list[LTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
     def fill_in_condition(condition: LTLFormula) -> list[LTLFormula]:
         vars: set[Condition] = condition.get_atoms()
         conds = [condition]
@@ -44,11 +60,12 @@ def fill_in_bounds(rules: list[tuple[LTLFormula, LTLFormula]], bounds: dict[dlpl
                 case CNegative(f): conds = [c.replace(Var(v), BooleanVar(f, False)) for c in conds]
         return conds
 
-    c_filled_in = [(nc, e) for (c, e) in rules for nc in fill_in_condition(c)]
+    c_filled_in = [LTLRule(nc, r.effect) for r in rules for nc in fill_in_condition(r.condition)]
 
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
-    return RuleTupleRepr([cond_from_dlplan(c) for c in rule.get_conditions()], [[eff_from_dlplan(e) for e in rule.get_effects()]])
+    return RuleTupleRepr([cond_from_dlplan(c) for c in rule.get_conditions()],
+                         [[eff_from_dlplan(e) for e in rule.get_effects()]])
 
 
 def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
@@ -73,12 +90,12 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleTupleRepr]:
 def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
     ruletups: list[RuleTupleRepr] = policy_to_rule_tuples(policy)
 
-    ltl_rules = list[tuple[LTLFormula, LTLFormula]]()
+    ltl_rules = list[LTLRule]()
     for r in ruletups:
         c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
         e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
 
-        ltl_rules.append((c_ltl, e_ltl))
+        ltl_rules.append(LTLRule(c_ltl, e_ltl))
 
     return NumLTL(ltl_rules)
 
@@ -128,4 +145,3 @@ def merge_rules(r1: RuleTupleRepr, r2: RuleTupleRepr) -> list[RuleTupleRepr]:
         return merged
 
     return []
-
