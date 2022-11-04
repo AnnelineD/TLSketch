@@ -1,8 +1,10 @@
+import itertools
+
 from ltl import *
 from functools import reduce
 from collections import namedtuple
 
-from src.logics.feature_vars import NumericalVar, BooleanVar
+from src.logics.feature_vars import NumericalVar, BooleanVar, FeatureVar
 from src.logics.rule_representation import *
 
 #  conditions: list[Condition]
@@ -12,16 +14,22 @@ RuleTupleRepr = namedtuple("Rule", "conditions effects")
 
 @dataclass
 class LTLRule:
-    condition: LTLFormula
-    effect: LTLFormula
+    condition: LTLFormula  # with vars of type Condition
+    effect: LTLFormula     # with vars of type Effect
 
-    def get_condition_features(self) -> set:
+    def get_sub_conditions(self) -> set[Condition]:
         return self.condition.get_atoms()
 
-    def get_effect_features(self) -> set:
+    def get_condition_features(self) -> set[Feature]:
+        return {c.feature for c in self.get_sub_conditions()}
+
+    def get_sub_effects(self) -> set[Effect]:
         return self.effect.get_atoms()
 
-    def get_features(self) -> set:
+    def get_effect_features(self) -> set[Feature]:
+        return {e.feature for e in self.get_sub_effects()}
+
+    def get_features(self) -> set[Feature]:
         return self.get_condition_features().union(self.get_effect_features())
 
     def show(self) -> str:
@@ -61,6 +69,53 @@ def fill_in_bounds(rules: list[LTLRule], bounds: dict[dlplan.Numerical, int]) ->
         return conds
 
     c_filled_in = [LTLRule(nc, r.effect) for r in rules for nc in fill_in_condition(r.condition)]
+
+
+def fill_in_rule(rule: LTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+    features: set[Feature] = rule.get_features()   # Get only the features that are present in conditions or effects
+                                                   # We do not need features that are not mentioned in conditions and are unchanged in the effects
+    options = {f: None for f in features}
+    condition_vars: set[Condition] = rule.condition.get_atoms()
+
+    for v in condition_vars:
+        match v:
+            case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f] + 1)]
+            case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
+            case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
+            case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
+
+    # If a feature is not mentioned in the conditions, but it is in the effect we should also know its value
+    for f in options:
+        if not options[f]:
+            match f:
+                case dlplan.Numerical: options[f] = [NumericalVar(f, i) for i in range(0, bounds[f] + 1)]
+                case dlplan.Boolean: options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
+
+    condition_combinations: list[dict[Feature, FeatureVar]] = [dict(zip(options.keys(), values)) for values in itertools.product(*options.values())]
+
+    effect_vars: set[Effect] = rule.effect.get_atoms()
+    new_rules = []
+
+    for c_dict in condition_combinations:
+        new_effect = rule.effect
+        new_condition = rule.condition
+        for v in condition_vars:
+            new_condition = new_condition.replace(Var(v), c_dict[v.feature])
+
+        for e in effect_vars:
+            match e:
+                case EPositive(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, True))
+                case ENegative(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, False))
+                case EBAny(f): pass  # TODO also the situation where f should keep its value
+                case EDecr(f):
+                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
+                            # print(c_dict.values())
+                            # print(new_effect)
+                case EIncr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
+                case ENAny(f): pass
+        new_rules.append(LTLRule(new_condition, new_effect))
+
+    return new_rules
 
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
