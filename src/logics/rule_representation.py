@@ -43,9 +43,11 @@ class Effect:
         match self:
             case EPositive(bf): return f"b{r}"
             case ENegative(bf): return f"¬b{r}"
-            case EBAny(bf): return f"{r}?"
+            case EBEqual(_): return f"b{r}="
+            case EBAny(bf): return f"b{r}?"
             case EIncr(nf): return f"n{r}↑"
             case EDecr(nf): return f"n{r}↓"
+            case ENEqual(_): return f"n{r}="
             case ENAny(nf): return f"n{r}?"
             case _: return "invalid"  # TODO raise error
 
@@ -54,10 +56,10 @@ def eff_from_dlplan(e: dlplan.BaseEffect) -> Effect:
     match e.str()[:9]:
         case "(:e_b_pos": return EPositive(e.get_base_feature())
         case "(:e_b_neg": return ENegative(e.get_base_feature())
-        case "(:e_b_bot": return EBAny(e.get_base_feature())
+        case "(:e_b_bot": return EBEqual(e.get_base_feature())
         case "(:e_n_inc": return EIncr(e.get_base_feature())
         case "(:e_n_dec": return EDecr(e.get_base_feature())
-        case "(:e_n_bot": return ENAny(e.get_base_feature())
+        case "(:e_n_bot": return ENEqual(e.get_base_feature())
         case _: return "invalid"  # TODO raise error
 
 
@@ -112,6 +114,11 @@ class ENegative(BooleanEffect):
 
 
 @dataclass(frozen=True, eq=True)
+class EBEqual(BooleanEffect):
+    pass
+
+
+@dataclass(frozen=True, eq=True)
 class EBAny(BooleanEffect):
     pass
 
@@ -123,6 +130,11 @@ class EIncr(NumericalEffect):
 
 @dataclass(frozen=True, eq=True)
 class EDecr(NumericalEffect):
+    pass
+
+
+@dataclass(frozen=True, eq=True)
+class ENEqual(NumericalEffect):
     pass
 
 

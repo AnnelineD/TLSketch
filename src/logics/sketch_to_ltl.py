@@ -106,12 +106,11 @@ def fill_in_rule(rule: LTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTL
             match e:
                 case EPositive(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, True))
                 case ENegative(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, False))
-                case EBAny(f): pass  # TODO also the situation where f should keep its value
-                case EDecr(f):
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
-                            # print(c_dict.values())
-                            # print(new_effect)
+                case EBEqual(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))
+                case EBAny(f): pass   # this situation shouldn't occur since features with any value shouldn't be mentioned in the LTL formula
+                case EDecr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
                 case EIncr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
+                case ENEqual(f): new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
                 case ENAny(f): pass
         new_rules.append(LTLRule(new_condition, new_effect))
 
