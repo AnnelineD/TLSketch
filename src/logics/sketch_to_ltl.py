@@ -55,6 +55,7 @@ class NumLTL:
 
 
 def fill_in_rule(rule: LTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+    # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
     features: set[Feature] = rule.get_features()   # Get only the features that are present in conditions or effects
                                                    # We do not need features that are not mentioned in conditions and are unchanged in the effects
     options = {f: None for f in features}
@@ -99,6 +100,10 @@ def fill_in_rule(rule: LTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTL
         new_rules.append(LTLRule(new_condition, new_effect))
 
     return new_rules
+
+
+def fill_in_rules(rules: list[LTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+    return [nr for r in rules for nr in fill_in_rule(r, bounds)]
 
 
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleTupleRepr:
