@@ -1,8 +1,9 @@
 import unittest
 
+import ltl
+
 from src.logics.sketch_to_ltl import *
 from src.dlplan_utils import *
-from src.logics.feature_vars import *
 
 
 class ToLTLTest(unittest.TestCase):
@@ -77,46 +78,57 @@ class ToLTLTest(unittest.TestCase):
 
     def test_merge_rules(self):
         # same conditions
-        r1 = RuleTupleRepr([CPositive(self.h)], [[EDecr(self.n)]])
-        r2 = RuleTupleRepr([CPositive(self.h)], [[ENegative(self.h)]])
-        self.assertEqual([RuleTupleRepr([CPositive(self.h)], [[EDecr(self.n)], [ENegative(self.h)]])],
+        r1 = RuleListRepr([CPositive(self.h)], [[EDecr(self.n)]])
+        r2 = RuleListRepr([CPositive(self.h)], [[ENegative(self.h)]])
+        self.assertEqual([RuleListRepr([CPositive(self.h)], [[EDecr(self.n)], [ENegative(self.h)]])],
                          merge_rules(r1, r2))
 
         # conditions of one rule are a subset of the conditions of the other rule
-        r3 = RuleTupleRepr([CPositive(self.h), CZero(self.n)], [[ENegative(self.h)]])
-        r4 = RuleTupleRepr([CPositive(self.h)], [[EIncr(self.n)]])
-        merged34 = [RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
-                    RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])]
+        r3 = RuleListRepr([CPositive(self.h), CZero(self.n)], [[ENegative(self.h)]])
+        r4 = RuleListRepr([CPositive(self.h)], [[EIncr(self.n)]])
+        merged34 = [RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
+                    RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])]
         self.assertEqual(merged34, merge_rules(r3, r4))
 
         # the non overlapping conditions are independent
-        r5 = RuleTupleRepr([CPositive(self.a), CPositive(self.b)], [[CNegative(self.a)]])
-        r6 = RuleTupleRepr([CPositive(self.a), CPositive(self.c)], [[CNegative(self.b)]])
-        merged56 = [RuleTupleRepr({CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
-                    RuleTupleRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
-                    RuleTupleRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]])]
+        r5 = RuleListRepr([CPositive(self.a), CPositive(self.b)], [[CNegative(self.a)]])
+        r6 = RuleListRepr([CPositive(self.a), CPositive(self.c)], [[CNegative(self.b)]])
+        merged56 = [RuleListRepr({CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
+                    RuleListRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
+                    RuleListRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]])]
         self.assertEqual(merged56, merge_rules(r5, r6))
 
         # all conditions are independent
-        r7 = RuleTupleRepr({CPositive(self.h)}, [[ENegative(self.h)]])
-        r8 = RuleTupleRepr({CGreater(self.n)}, [[EIncr(self.n)]])
+        r7 = RuleListRepr({CPositive(self.h)}, [[ENegative(self.h)]])
+        r8 = RuleListRepr({CGreater(self.n)}, [[EIncr(self.n)]])
         merged78 = [
-            RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)]]),
-            RuleTupleRepr({CNegative(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
-            RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])
+            RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)]]),
+            RuleListRepr({CNegative(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
+            RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]])
         ]
 
         self.assertEqual(merged78, merge_rules(r7, r8))
 
         # the rules shouldn't be merged
-        r9 = RuleTupleRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.a)]])
-        r10 = RuleTupleRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.b)]])
+        r9 = RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.a)]])
+        r10 = RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.b)]])
 
         self.assertEqual([], merge_rules(r9, r10))
 
     def test_bound_fill_in(self):
         bound_dict = {self.n: 2, self.m: 2, self.o: 3}
-        nltl = NumLTL([LTLRule(Var(CGreater(self.n)) & Var(CGreater(self.m)) & Var(CGreater(self.o)), Var(EDecr(self.n)))])
+        print(isinstance(Var(CGreater('a')).data, Condition))
+
+        rules = [ArrowLTLRule(Var(CGreater(self.n)), Var(EDecr(self.n))), ArrowLTLRule(Var(CPositive(self.a)), Var(ENegative(self.a)))]
+
+        rs = fill_in_rules(rules, bound_dict)
+
+        wanted_rs = [LTLRule(NumericalVar(self.n, 1), NumericalVar(self.n, 0)),
+                     LTLRule(NumericalVar(self.n, 2), NumericalVar(self.n, 0) | NumericalVar(self.n, 1)),
+                     LTLRule(BooleanVar(self.a, True), BooleanVar(self.a, False))
+                     ]
+        self.assertEqual(rs, wanted_rs)
+
 
 
 
