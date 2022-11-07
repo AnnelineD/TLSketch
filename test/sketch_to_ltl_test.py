@@ -50,18 +50,18 @@ class ToLTLTest(unittest.TestCase):
 
         self.p1 = builder.get_result()
 
-    def test_num_ltl(self):
-        num_ltl_p1 = to_num_ltl(self.p1)
+    def test_arrow_ltl(self):
+        num_ltl_p1 = policy_to_arrowsketch(self.p1)
 
-        # hack because equality between conditions and effects is not well defined;
+        # hack because equality between conditions and effects is not well-defined;
         # the condition in a rule is not equal to the condition that was put into the rule
-        # i.e. in the following c_h_neg != self.h_neg_condition_0 which is counter intuitive
+        # i.e. in the following c_h_neg != self.h_neg_condition_0 which is counterintuitive
         h = self.p1.get_rules()[0].get_conditions()[0].get_base_feature()
         n = self.p1.get_rules()[0].get_conditions()[1].get_base_feature()
 
-        self.assertEqual([Var(CNegative(h)) & Var(CGreater(n)),
-                          (Var(CPositive(h))) & Var(CGreater(n))],
-                         num_ltl_p1.conditions)
+        rules = [ArrowLTLRule(Var(CNegative(h)) & Var(CGreater(n)), Var(EPositive(h)) & Var(EDecr(n))),
+                 ArrowLTLRule((Var(CPositive(h))) & Var(CGreater(n)), Var(ENegative(h)))]
+        self.assertEqual(rules, num_ltl_p1.rules)
 
     def test_show(self):  # TODO maybe move this test to a separate file?
         self.assertEqual(show_condition(self.h_neg_condition_0, "H"), "¬H")

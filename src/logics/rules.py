@@ -1,5 +1,4 @@
 from collections import namedtuple
-from dataclasses import dataclass
 from functools import reduce
 
 from ltl import *
@@ -82,22 +81,44 @@ class ArrowLTLRule(Rule):
         return f'Condition: {self.conditions.show()}      Effect: {self.effects.show()}'
 
 
-class NumLTL:
+class LTLSketchAbs:
+    rules: list[Rule]
+
+    goal = Var("goal")
+    alive = Finally(goal)  # There exists a path such that finally goal
+    dead = ~alive
+
     def __init__(self, rules: list[LTLRule]):
         self.rules = rules
-        self.conditions = [r.conditions for r in self.rules]
-        self.goal = Var("goal")
-        self.dead = Not(Finally(self.goal))
-        self.ltl_conditions = Globally(reduce(Or, self.conditions) | self.dead | self.goal)
-        self.reach_goal = Finally(self.goal)
 
-        self.full_rules = [Then(r.conditions, Until(Not(r.effects & self.dead), r.effects & Not(self.dead))) for r in self.rules]
+    def _get_conditions(self):
+        return [r.conditions for r in self.rules]
+
+    def _rule_should_be_followed(self) -> LTLFormula:
+        def rule_statement(c, e) -> LTLFormula:
+            return Then(c, Until(~(e & self.dead), e & self.alive))
+
+        return reduce(And, map(rule_statement, self.rules))
+
+    def _one_condition_must_hold(self) -> LTLFormula:
+        return Globally(reduce(Or, self._get_conditions()) | self.dead | self.goal)
 
     def show(self) -> str:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
-    def to_formula(self, bounds, goal) -> LTLFormula:
-        pass
+    def get_formula(self, goal) -> LTLFormula:
+        return self._rule_should_be_followed() and self._one_condition_must_hold() and Finally(goal)
+
+
+class LTLSketch(LTLSketchAbs):
+    rules: list[LTLRule]
+
+
+class ArrowLTLSketch(LTLSketchAbs):
+    rules: list[ArrowLTLRule]
+
+    def to_LTLSketch(self, feature_bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
+        pass  # TODO rearange methods from sketch_to_ltl here
 
 
 if __name__ == '__main__':

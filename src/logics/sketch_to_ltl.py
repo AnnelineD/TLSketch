@@ -52,7 +52,7 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
     return new_rules
 
 
-def fill_in_rules(rules: list[LTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+def fill_in_rules(rules: list[ArrowLTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
     return [nr for r in rules for nr in fill_in_rule(r, bounds)]
 
 
@@ -80,7 +80,7 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
     return merged
 
 
-def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
+def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
     ruletups: list[RuleListRepr] = policy_to_rule_tuples(policy)
 
     ltl_rules = list[ArrowLTLRule]()
@@ -92,7 +92,7 @@ def to_num_ltl(policy: dlplan.Policy) -> NumLTL:
 
         ltl_rules.append(ArrowLTLRule(c_ltl, e_ltl))
 
-    return NumLTL(ltl_rules)
+    return ArrowLTLSketch(ltl_rules)
 
 
 def get_condition_features(cs: set[Condition]) -> set[Feature]:
