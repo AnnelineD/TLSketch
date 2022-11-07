@@ -51,24 +51,7 @@ class NumLTL:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
     def to_formula(self, bounds, goal) -> LTLFormula:
-        bounded_rules: list[LTLRule] = fill_in_bounds(self.rules, bounds)
-
-
-# TODO also fill in effects
-def fill_in_bounds(rules: list[LTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
-    def fill_in_condition(condition: LTLFormula) -> list[LTLFormula]:
-        vars: set[Condition] = condition.get_atoms()
-        conds = [condition]
-
-        for v in vars:
-            match v:
-                case CGreater(f): conds = [c.replace(Var(v), NumericalVar(f, i)) for i in range(1, bounds[f] + 1) for c in conds]
-                case CZero(f): conds = [c.replace(Var(v), NumericalVar(f, 0)) for c in conds]
-                case CPositive(f): conds = [c.replace(Var(v), BooleanVar(f, True)) for c in conds]
-                case CNegative(f): conds = [c.replace(Var(v), BooleanVar(f, False)) for c in conds]
-        return conds
-
-    c_filled_in = [LTLRule(nc, r.effect) for r in rules for nc in fill_in_condition(r.condition)]
+        pass
 
 
 def fill_in_rule(rule: LTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:

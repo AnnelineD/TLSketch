@@ -118,7 +118,6 @@ class ToLTLTest(unittest.TestCase):
         bound_dict = {self.n: 2, self.m: 2, self.o: 3}
         nltl = NumLTL([LTLRule(Var(CGreater(self.n)) & Var(CGreater(self.m)) & Var(CGreater(self.o)), Var(EDecr(self.n)))])
 
-        fill_in_bounds(nltl.rules, bound_dict)
 
 
 
