@@ -41,8 +41,9 @@ if __name__ == '__main__':
 
     print(show_sketch(sketch))
 
-    num_ltl = to_num_ltl(sketch)
-    for r in num_ltl.full_rules:
+    arrow_ltl = policy_to_arrowsketch(sketch)
+
+    for r in arrow_ltl.full_rules:
         print(r.show())
 
     # print(policy_to_rule_tuples(sketch))

@@ -107,7 +107,7 @@ def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
     c1: set[Condition] = set(r1.conditions)
     c2: set[Condition] = set(r2.conditions)
     if c1 == c2:
-        return [RuleListRepr(r1.conditions, r1.effects + r2.effects)]
+        return [RuleListRepr(r1.conditions, r1.effects + [r for r in r2.effects if r not in r1.effects])]
 
     c_intersect: set[Condition] = c1.intersection(c2)
 
@@ -143,3 +143,45 @@ def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
         return merged
 
     return []
+
+
+def merge_all_rules(rs: list[RuleListRepr]) -> list[RuleListRepr]:
+    def add_rule(rules: list[RuleListRepr], to_add: RuleListRepr):
+        merged = False
+        for r in rules:
+            mrs: list[RuleListRepr] = merge_rules(r, to_add)
+            if mrs:
+                merged = True
+                yield from mrs
+            else:
+                yield r
+        if not merged:
+            yield to_add
+
+    nrs = []
+    for r in rs:
+        if not nrs:
+            nrs.append(r)
+        else:
+            nrs = list(add_rule(nrs, r))
+
+    return nrs
+
+
+def recursive_add(todo: list[RuleListRepr], curr: list[RuleListRepr]) -> list[RuleListRepr]:
+    if not todo:
+        return curr
+    if not curr:
+        return recursive_add(todo[1:], [todo[0]])
+
+    def add_rules(rs1, rs2):
+        for r in rs2:
+            for r2 in merge
+    mrs = merge_rules(todo[0], curr[0])
+    mrs2 = [r for m in mrs for r in merge_rules(m, curr[1])]
+    mrs3 = [r for m in mrs2 for r in merge_rules(m, curr[2])]
+
+    if mrs:
+        return recursive_add(todo[1:] + curr[1:], merge_rules(todo[0], curr[0]))
+    else
+        return

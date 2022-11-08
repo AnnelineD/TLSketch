@@ -12,10 +12,13 @@ class ToLTLTest(unittest.TestCase):
     def setUp(self) -> None:
         vocabulary_info = dlplan.VocabularyInfo()
         vocabulary_info.add_predicate("unary", 1)
+        vocabulary_info.add_predicate("a", 1)
+        vocabulary_info.add_predicate("b", 1)
+        vocabulary_info.add_predicate("c", 1)
         factory = dlplan.SyntacticElementFactory(vocabulary_info)
-        self.a = factory.parse_boolean("b_empty(c_primitive(unary,0))")
-        self.b = factory.parse_boolean("b_empty(c_primitive(unary,0))")
-        self.c = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.a = factory.parse_boolean("b_empty(c_primitive(a,0))")
+        self.b = factory.parse_boolean("b_empty(c_primitive(b,0))")
+        self.c = factory.parse_boolean("b_empty(c_primitive(c,0))")
         self.d = factory.parse_boolean("b_empty(c_primitive(unary,0))")
         self.e = factory.parse_boolean("b_empty(c_primitive(unary,0))")
         self.h = factory.parse_boolean("b_empty(c_primitive(unary,0))")
@@ -128,6 +131,34 @@ class ToLTLTest(unittest.TestCase):
         r10 = RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.b)]])
 
         self.assertEqual([], merge_rules(r9, r10))
+
+    def test_merge_all_rules(self):
+        r1 = RuleListRepr({CPositive(self.a)}, [[ENegative(self.a)]])
+        r2 = RuleListRepr({CPositive(self.b)}, [[ENegative(self.b)]])
+        r3 = RuleListRepr({CPositive(self.c)}, [[ENegative(self.c)]])
+
+        m123 = [RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CNegative(self.c)}, [[ENegative(self.a)]]),
+                RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.c)]]),
+                RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.b)]]),
+                RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.b)], [ENegative(self.c)]]),
+                RuleListRepr({CPositive(self.h), CNegative(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.c)]]),
+                RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.a)], [ENegative(self.b)]]),
+                RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.b)], [ENegative(self.c)]])
+        ]
+
+        mr = merge_rules(r1, r2)
+
+        mr2 = merge_rules(mr[0], r3)
+        mr3 = merge_rules(mr2[1], mr[1])
+        print()
+
+        mr33 = merge_rules(mr2[2], mr[1])
+        for m in mr33:
+            print(m)
+        # rs = merge_all_rules([r1, r2, r3])
+
+        # for r in merge_all_rules(rs):
+        #    print(r)
 
     def test_bound_fill_in(self):
         bound_dict = {self.n: 2, self.m: 2, self.o: 3}
