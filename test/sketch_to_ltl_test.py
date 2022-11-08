@@ -4,6 +4,7 @@ import ltl
 
 from src.logics.sketch_to_ltl import *
 from src.dlplan_utils import *
+from utils import ass_same_elements
 
 
 class ToLTLTest(unittest.TestCase):
@@ -15,6 +16,8 @@ class ToLTLTest(unittest.TestCase):
         self.a = factory.parse_boolean("b_empty(c_primitive(unary,0))")
         self.b = factory.parse_boolean("b_empty(c_primitive(unary,0))")
         self.c = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.d = factory.parse_boolean("b_empty(c_primitive(unary,0))")
+        self.e = factory.parse_boolean("b_empty(c_primitive(unary,0))")
         self.h = factory.parse_boolean("b_empty(c_primitive(unary,0))")
 
         self.n = factory.parse_numerical("n_count(c_primitive(unary,0))")
@@ -97,6 +100,17 @@ class ToLTLTest(unittest.TestCase):
                     RuleListRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
                     RuleListRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]])]
         self.assertEqual(merged56, merge_rules(r5, r6))
+
+        # conditions have multiple non-overlapping elements
+        r11 = RuleListRepr([CPositive(self.h), CPositive(self.a)], [[CNegative(self.a)]])
+        r12 = RuleListRepr([CPositive(self.h), CPositive(self.b), CPositive(self.c)], [[CNegative(self.b)]])
+        merged1112 = [
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b)}, [[CNegative(self.a)]]),
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.c)}, [[CNegative(self.a)]]),
+            RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]])
+        ]
+        self.assertTrue(ass_same_elements(merged1112, merge_rules(r11, r12)))
 
         # all conditions are independent
         r7 = RuleListRepr({CPositive(self.h)}, [[ENegative(self.h)]])

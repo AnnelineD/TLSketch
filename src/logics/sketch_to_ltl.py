@@ -100,6 +100,9 @@ def get_condition_features(cs: set[Condition]) -> set[Feature]:
 
 
 def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
+    if r1 == r2:
+        return [r1]
+
     #  check overlapping
     c1: set[Condition] = set(r1.conditions)
     c2: set[Condition] = set(r2.conditions)
@@ -126,13 +129,13 @@ def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
 
         #  c1 is true but c2 not
         if true_c2:
-            m1 = RuleListRepr(c_intersect.union(true_c1).union(false_c2), r1.effects)
-            merged.append(m1)
+            m1 = [RuleListRepr(c_intersect.union(true_c1).union({f}), r1.effects) for f in false_c2]
+            merged.extend(m1)
 
         # c1 if false and c2 true
         if true_c1:
-            m2 = RuleListRepr(c_intersect.union(false_c1).union(true_c2), r2.effects)
-            merged.append(m2)
+            m2 = [RuleListRepr(c_intersect.union(true_c2).union({f}), r2.effects) for f in false_c1]
+            merged.extend(m2)
 
         # c1 and c2 are true
         m3 = RuleListRepr(c_intersect.union(true_c1).union(true_c2), r1.effects + r2.effects)
