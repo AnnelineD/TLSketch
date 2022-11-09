@@ -1,7 +1,7 @@
 import itertools
 
 
-from ..logics.rules import *
+from logics.rules import *
 
 
 def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
