@@ -137,28 +137,72 @@ class ToLTLTest(unittest.TestCase):
         r2 = RuleListRepr({CPositive(self.b)}, [[ENegative(self.b)]])
         r3 = RuleListRepr({CPositive(self.c)}, [[ENegative(self.c)]])
 
-        m123 = [RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CNegative(self.c)}, [[ENegative(self.a)]]),
-                RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.c)]]),
-                RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.b)]]),
-                RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.b)], [ENegative(self.c)]]),
-                RuleListRepr({CPositive(self.h), CNegative(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.c)]]),
-                RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.a)], [ENegative(self.b)]]),
-                RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.b)], [ENegative(self.c)]])
+        m123 = [RuleListRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.b)], [ENegative(self.c)]]),
+                RuleListRepr({CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.a)], [ENegative(self.b)]]),
+                RuleListRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.a)], [ENegative(self.c)]]),
+                RuleListRepr({CPositive(self.a), CNegative(self.b), CNegative(self.c)}, [[ENegative(self.a)]]),
+                RuleListRepr({CNegative(self.a), CPositive(self.b), CPositive(self.c)}, [[ENegative(self.b)], [ENegative(self.c)]]),
+                RuleListRepr({CNegative(self.a), CPositive(self.b), CNegative(self.c)}, [[ENegative(self.b)]]),
+                RuleListRepr({CNegative(self.a), CNegative(self.b), CPositive(self.c)}, [[ENegative(self.c)]]),
         ]
 
-        mr = merge_rules(r1, r2)
+        self.assertEqual(m123, merge_all_rules([r1, r2, r3]))
 
-        mr2 = merge_rules(mr[0], r3)
-        mr3 = merge_rules(mr2[1], mr[1])
-        print()
+        # same conditions
+        r1a = RuleListRepr([CPositive(self.h)], [[EDecr(self.n)]])
+        r2a = RuleListRepr([CPositive(self.h)], [[ENegative(self.h)]])
+        self.assertEqual([RuleListRepr({CPositive(self.h)}, [[EDecr(self.n)], [ENegative(self.h)]])],
+                         merge_all_rules([r1a, r2a]))
 
-        mr33 = merge_rules(mr2[2], mr[1])
-        for m in mr33:
-            print(m)
-        # rs = merge_all_rules([r1, r2, r3])
+        # conditions of one rule are a subset of the conditions of the other rule
+        r3a = RuleListRepr([CPositive(self.h), CZero(self.n)], [[ENegative(self.h)]])
+        r4a = RuleListRepr([CPositive(self.h)], [[EIncr(self.n)]])
+        merged34 = [
+            RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]]),
+            RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[EIncr(self.n)]]),
+        ]
+        self.assertEqual(merged34, merge_all_rules([r3a, r4a]))
 
-        # for r in merge_all_rules(rs):
-        #    print(r)
+        # the non overlapping conditions are independent
+        r5 = RuleListRepr([CPositive(self.a), CPositive(self.b)], [[CNegative(self.a)]])
+        r6 = RuleListRepr([CPositive(self.a), CPositive(self.c)], [[CNegative(self.b)]])
+        merged56 = [RuleListRepr({CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]]),
+                    RuleListRepr({CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
+                    RuleListRepr({CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.b)]])
+                    ]
+
+        self.assertEqual(merged56, merge_all_rules([r5, r6]))
+
+        # conditions have multiple non-overlapping elements
+        r11 = RuleListRepr([CPositive(self.h), CPositive(self.a)], [[CNegative(self.a)]])
+        r12 = RuleListRepr([CPositive(self.h), CPositive(self.b), CPositive(self.c)], [[CNegative(self.b)]])
+        merged1112 = [
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.a)], [CNegative(self.b)]]),
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CPositive(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CPositive(self.c)}, [[CNegative(self.a)]]),
+            RuleListRepr({CPositive(self.h), CPositive(self.a), CNegative(self.b), CNegative(self.c)}, [[CNegative(self.a)]]),
+            RuleListRepr({CPositive(self.h), CNegative(self.a), CPositive(self.b), CPositive(self.c)}, [[CNegative(self.b)]]),
+
+        ]
+
+        self.assertTrue(ass_same_elements(merged1112, merge_all_rules([r11, r12])))
+
+        # all conditions are independent
+        r7 = RuleListRepr({CPositive(self.h)}, [[ENegative(self.h)]])
+        r8 = RuleListRepr({CGreater(self.n)}, [[EIncr(self.n)]])
+        merged78 = [
+            RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.h)]]),
+            RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.h)], [EIncr(self.n)]]),
+            RuleListRepr({CNegative(self.h), CGreater(self.n)}, [[EIncr(self.n)]])
+        ]
+
+        self.assertEqual(merged78, merge_all_rules([r7, r8]))
+
+        # the rules shouldn't be merged
+        r9 = RuleListRepr({CPositive(self.h), CZero(self.n)}, [[ENegative(self.a)]])
+        r10 = RuleListRepr({CPositive(self.h), CGreater(self.n)}, [[ENegative(self.b)]])
+
+        self.assertEqual([r9, r10], merge_all_rules([r9, r10]))
 
     def test_bound_fill_in(self):
         bound_dict = {self.n: 2, self.m: 2, self.o: 3}

@@ -1,7 +1,7 @@
 import itertools
 
 
-from logics.rules import *
+from ..logics.rules import *
 
 
 def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
@@ -88,8 +88,6 @@ def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
         c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
         e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
 
-        print('here', c_ltl, e_ltl)
-
         ltl_rules.append(ArrowLTLRule(c_ltl, e_ltl))
 
     return ArrowLTLSketch(ltl_rules)
@@ -146,42 +144,23 @@ def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
 
 
 def merge_all_rules(rs: list[RuleListRepr]) -> list[RuleListRepr]:
-    def add_rule(rules: list[RuleListRepr], to_add: RuleListRepr):
-        merged = False
-        for r in rules:
-            mrs: list[RuleListRepr] = merge_rules(r, to_add)
-            if mrs:
-                merged = True
-                yield from mrs
-            else:
-                yield r
-        if not merged:
-            yield to_add
-
-    nrs = []
+    fts: list[Feature] = []
     for r in rs:
-        if not nrs:
-            nrs.append(r)
-        else:
-            nrs = list(add_rule(nrs, r))
+        for f in r.get_condition_features():
+            if not f in fts:
+                fts.append(f)
+    ops = [None]*len(fts)
+    for i, f in enumerate(fts):
+        match f:
+            case x if isinstance(x, dlplan.Boolean): ops[i] = [CPositive(x), CNegative(x)]
+            case x if isinstance(x, dlplan.Numerical): ops[i] = [CZero(x), CGreater(x)]
+            case _: print("type problem in merge_all_rules")  # TODO raise error
 
+    cs = itertools.product(*ops)
+    nrs = []
+    for c in cs:
+        eff = [e for r in rs if set(r.conditions).issubset(set(c)) for e in r.effects]
+        if eff:
+            nrs.append(RuleListRepr(set(c), eff))
     return nrs
 
-
-def recursive_add(todo: list[RuleListRepr], curr: list[RuleListRepr]) -> list[RuleListRepr]:
-    if not todo:
-        return curr
-    if not curr:
-        return recursive_add(todo[1:], [todo[0]])
-
-    def add_rules(rs1, rs2):
-        for r in rs2:
-            for r2 in merge
-    mrs = merge_rules(todo[0], curr[0])
-    mrs2 = [r for m in mrs for r in merge_rules(m, curr[1])]
-    mrs3 = [r for m in mrs2 for r in merge_rules(m, curr[2])]
-
-    if mrs:
-        return recursive_add(todo[1:] + curr[1:], merge_rules(todo[0], curr[0]))
-    else
-        return
