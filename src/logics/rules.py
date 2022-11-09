@@ -48,6 +48,8 @@ class LTLRule(Rule):
 
         return self
 
+    def show(self) -> str:
+        return f"conditions: {self.conditions.show()}    effects: {self.effects.show()}"
 
 class ArrowLTLRule(Rule):
     conditions: LTLFormula  # with vars of type Condition
