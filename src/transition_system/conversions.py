@@ -8,11 +8,12 @@ def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str
 
 
 def dlvocab_from_tarski(lan: tarski.fol.FirstOrderLanguage) -> dlplan.VocabularyInfo:
-    # TODO if there are constants
     v = dlplan.VocabularyInfo()
     for p in lan.predicates:
         if isinstance(p.name, str):
             v.add_predicate(*tarski_predicate_to_tuple(p))
+    for c in lan.constants():  # FIXME add only domain constants
+        v.add_constant(c.name)
     return v
 
 

@@ -8,6 +8,9 @@ class MyTestCase(unittest.TestCase):
     problem = reader.parse_instance('../blocks_4_clear/p-3-0.pddl')
     i = dlinstance_from_tarski(problem.language)
 
+    problem_2 = PDDLReader(raise_on_error=True).read_problem('../gripper/domain.pddl', '../gripper/p-3-0.pddl')
+    i_2 = dlinstance_from_tarski(problem_2.language)
+
     def test_predicate_conversion(self):
         lan = tarski.fstrips.language("test")
         p = tarski.syntax.predicate.Predicate("test", lan, TSort("obj", lan))
@@ -24,6 +27,25 @@ class MyTestCase(unittest.TestCase):
         v.add_predicate("on", 2)
 
         self.assertEqual(v.get_predicates(), genv.get_predicates())
+
+    def test_vocab_constants(self):
+        genv = dlvocab_from_tarski(self.problem_2.language)
+
+        v = dlplan.VocabularyInfo()
+        v.add_predicate("room", 1)
+        v.add_predicate("ball", 1)
+        v.add_predicate("gripper", 1)
+        v.add_predicate("at-robby", 1)
+        v.add_predicate("at", 2)
+        v.add_predicate("free", 1)
+        v.add_predicate("carry", 2)
+
+        v.add_constant("rooma")
+        v.add_constant("roomb")
+
+        self.assertEqual(v.get_predicates(), genv.get_predicates())
+        self.assertEqual(v.get_constants(), genv.get_constants())  # FIXME should only add domain constants
+
 
     def test_state_conv(self):
         dlstate: dlplan.State = tmodel_to_dlstate(self.problem.init, self.i)
