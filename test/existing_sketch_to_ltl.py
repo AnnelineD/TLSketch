@@ -9,9 +9,8 @@ from src.transition_system.tarski_transition_model import *
 
 class MyTestCase(unittest.TestCase):
     def get_factory(self, domain_file: str, instance_file: str):
-        reader = PDDLReader(raise_on_error=True)
-        tproblem: TProblem = reader.read_problem(domain_file, instance_file)
-        i = dlinstance_from_tarski(tproblem.language)
+        dproblem, iproblem = get_tarski_domain_and_instance(domain_file, instance_file)
+        i = dlinstance_from_tarski(dproblem.language, iproblem.language)
 
         return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
 
@@ -47,6 +46,34 @@ class MyTestCase(unittest.TestCase):
         ]
 
         self.assertEqual(wanted_ltl_0, fill_in_rules(arrow_sketch_0.rules, {n: 2}))
+
+    def test_blocks_on(self):
+        factory = self.get_factory("../blocks_4_on/domain.pddl", "../blocks_4_on/p-3-0.pddl")
+
+        """
+        {¬b1} -> {n0=, b0=}
+        {} -> {b0}
+        {} -> {n0↓}
+        """
+        sketch_0: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
+                                                             '(:boolean_features "b_nullary(arm-empty)" "b_empty(c_and(c_not(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1))),c_primitive(clear,0)))")\n'
+                                                             '(:numerical_features "n_count(c_primitive(on,0))")\n'
+                                                             '(:rule (:conditions ) (:effects (:e_b_pos 1)))\n'
+                                                             '(:rule (:conditions ) (:effects (:e_n_dec 0)))\n'
+                                                             '(:rule (:conditions (:c_b_neg 0)) (:effects (:e_b_bot 1) (:e_n_bot 0)))\n'
+                                                             ')', factory)
+
+        b0 = sketch_0.get_boolean_features()[0]
+        b1 = sketch_0.get_boolean_features()[1]
+        n = sketch_0.get_numerical_features()[0]
+        arrow_sketch_0 = policy_to_arrowsketch(sketch_0)
+
+        wanted_rules_0: list[ArrowLTLRule] = [
+            ArrowLTLRule(Var(CPositive(b1)), Var(EPositive(b0)) | Var(EDecr(n))),
+            ArrowLTLRule(Var(CNegative(b1)), (((Var(ENAny(n)) & Var(EBAny(b0))) | Var(EPositive(b0))) | Var(EDecr(n))))
+        ]
+
+        self.assertEqual(wanted_rules_0, arrow_sketch_0.rules)
 
     def test_gripper(self):
         factory = self.get_factory("../gripper/domain.pddl", "../gripper/p-3-0.pddl")

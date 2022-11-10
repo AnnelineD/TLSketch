@@ -7,22 +7,24 @@ def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str
     return p.name, len(p.sort)
 
 
-def dlvocab_from_tarski(lan: tarski.fol.FirstOrderLanguage) -> dlplan.VocabularyInfo:
+def dlvocab_from_tarski(domain_lan: tarski.fol.FirstOrderLanguage, add_goals=True) -> dlplan.VocabularyInfo:
     v = dlplan.VocabularyInfo()
-    for p in lan.predicates:
+    for p in domain_lan.predicates:
         if isinstance(p.name, str):
-            v.add_predicate(*tarski_predicate_to_tuple(p))
-    for c in lan.constants():  # FIXME add only domain constants
+            v.add_predicate(str(p.name), p.arity)
+            if add_goals:
+                v.add_predicate(str(p.name) + '_g', p.arity)
+    for c in domain_lan.constants():
         v.add_constant(c.name)
     return v
 
 
-def dlinstance_from_tarski(lan: tarski.fol.FirstOrderLanguage) -> dlplan.InstanceInfo:
-    v: dlplan.VocabularyInfo = dlvocab_from_tarski(lan)
+def dlinstance_from_tarski(domain_lan: tarski.fol.FirstOrderLanguage, instance_lan: tarski.fol.FirstOrderLanguage) -> dlplan.InstanceInfo:
+    v: dlplan.VocabularyInfo = dlvocab_from_tarski(domain_lan)
     i = dlplan.InstanceInfo(v)
-    d: dict[TSort, list[TConstant]] = sort_constants(lan)
+    d: dict[TSort, list[TConstant]] = sort_constants(instance_lan)
 
-    for p in lan.predicates:
+    for p in domain_lan.predicates:
         if isinstance(p.name, str):
             if not p.sort:
                 i.add_atom(p.name, [])

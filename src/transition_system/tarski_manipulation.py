@@ -6,6 +6,7 @@ from tarski.syntax.sorts import Sort as TSort
 from tarski.fstrips.action import Action as TAction
 from tarski.fstrips.problem import Problem as TProblem
 from tarski.model import Model as TModel
+from tarski.io import PDDLReader
 import tarski.search
 import itertools
 
@@ -52,3 +53,10 @@ def sort_constants(language: tarski.fol.FirstOrderLanguage) -> dict[TSort, list[
 def has_params(action: TAction) -> bool:
     return len(action.parameters.vars()) != 0
 
+
+def get_tarski_domain_and_instance(domain_file, instance_file):
+    domain_reader = PDDLReader()
+    instance_reader = PDDLReader()
+    domain_reader.parse_domain(domain_file)
+    instance_reader.read_problem(domain_file, instance_file)
+    return domain_reader.problem, instance_reader.problem
