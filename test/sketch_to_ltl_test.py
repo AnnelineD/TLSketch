@@ -206,7 +206,6 @@ class ToLTLTest(unittest.TestCase):
 
     def test_bound_fill_in(self):
         bound_dict = {self.n: 2, self.m: 2, self.o: 3}
-        print(isinstance(Var(CGreater('a')).data, Condition))
 
         rules = [ArrowLTLRule(Var(CGreater(self.n)), Var(EDecr(self.n))), ArrowLTLRule(Var(CPositive(self.a)), Var(ENegative(self.a)))]
 
@@ -217,6 +216,17 @@ class ToLTLTest(unittest.TestCase):
                      LTLRule(BooleanVar(self.a, True), BooleanVar(self.a, False))
                      ]
         self.assertEqual(rs, wanted_rs)
+
+        rules_2 = [ArrowLTLRule(Var(CZero(self.n)), Var(EDecr(self.m)))]
+        rs_2 = fill_in_rules(rules_2, bound_dict)
+
+        wanted_rs_2 = [
+            LTLRule(NumericalVar(self.m, 0) & NumericalVar(self.n, 0), NumericalVar(self.m, 0)),
+            LTLRule(NumericalVar(self.m, 1) & NumericalVar(self.n, 0), NumericalVar(self.m, 0)),
+            LTLRule(NumericalVar(self.m, 2) & NumericalVar(self.n, 0), NumericalVar(self.m, 0) | NumericalVar(self.m, 1)),
+        ]
+
+        self.assertEqual(rs_2, wanted_rs_2)
 
 
 

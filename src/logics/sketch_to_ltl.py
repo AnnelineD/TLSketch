@@ -6,8 +6,13 @@ from logics.rules import *
 
 def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
     # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
-    features: set[Feature] = rule.get_features()   # Get only the features that are present in conditions or effects
+    features: set[Feature] = rule.get_condition_features()   # Get only the features that are present in conditions or effects
                                                    # We do not need features that are not mentioned in conditions and are unchanged in the effects
+    for ef in rule.effects.get_atoms():
+        match ef:
+            case EBAny(f): features.add(f)  # TODO should be EBEqual
+            case NumericalEffect(f): features.add(f)
+
     options = {f: None for f in features}
     condition_vars: set[Condition] = rule.conditions.get_atoms()
 
@@ -22,8 +27,9 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
     for f in options:
         if not options[f]:
             match f:
-                case dlplan.Numerical: options[f] = [NumericalVar(f, i) for i in range(0, bounds[f] + 1)]
-                case dlplan.Boolean: options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
+                case x if isinstance(x, dlplan.Numerical): options[f] = [NumericalVar(f, i) for i in range(0, bounds[f] + 1)]
+                case x if isinstance(x, dlplan.Boolean): options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
+                case _: print("something went wrong while filling in the feature values")        # TODO raise error
 
     condition_combinations: list[dict[Feature, FeatureVar]] = [dict(zip(options.keys(), values)) for values in itertools.product(*options.values())]
 
@@ -34,19 +40,28 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
         new_effect = rule.effects
         new_condition = rule.conditions
         for v in condition_vars:
-            new_condition = new_condition.replace(Var(v), c_dict[v.feature])
+            # TODO double check this
+            # new_condition = new_condition.replace(Var(v), c_dict[v.feature])
+            if len(c_dict) == 0:
+                new_condition = Top()
+            elif len(c_dict) == 1:
+                new_condition = list(c_dict.values())[0]
+            else:
+                new_condition = reduce(And, c_dict.values())
 
         for e in effect_vars:
             match e:
                 case EPositive(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, True))
                 case ENegative(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, False))
-                case EBAny(f): pass  # TODO also the situation where f should keep its value
+                case EBAny(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))  # TODO also the situation where f should keep its value
                 case EDecr(f):
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
-                            # print(c_dict.values())
-                            # print(new_effect)
-                case EIncr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
-                case ENAny(f): pass
+                    if c_dict[f].value == 0 or c_dict[f].value == 1:
+                        new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
+                    else:
+                        new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
+                case EIncr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))  # FIXME edge cases
+                case ENAny(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
+        # if LTLRule(new_condition, new_effect) not in
         new_rules.append(LTLRule(new_condition, new_effect))
 
     return new_rules
@@ -82,9 +97,10 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
 
 def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
     ruletups: list[RuleListRepr] = policy_to_rule_tuples(policy)
+    mergedtups: list[RuleListRepr] = merge_all_rules(ruletups)
 
     ltl_rules = list[ArrowLTLRule]()
-    for r in ruletups:
+    for r in mergedtups:
         c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
         e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
 

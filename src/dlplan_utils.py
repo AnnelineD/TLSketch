@@ -16,10 +16,10 @@ def show_effect(e: dlplan.BaseEffect, representation: str = None) -> str:
     match e.str()[:9]:
         case "(:e_b_pos": return representation if representation else f"b{idx}"
         case "(:e_b_neg": return f"¬{representation}" if representation else f"¬b{idx}"
-        case "(:e_b_bot": return f"{representation}?" if representation else f"b{idx}?"
+        case "(:e_b_bot": return f"{representation}?" if representation else f"b{idx}="
         case "(:e_n_inc": return f"{representation}↑" if representation else f"n{idx}↑"
         case "(:e_n_dec": return f"{representation}↓" if representation else f"n{idx}↓"
-        case "(:e_n_bot": return f"{representation}?" if representation else f"n{idx}?"
+        case "(:e_n_bot": return f"{representation}?" if representation else f"n{idx}="
         case _: return "invalid"  # TODO raise error
 
 # TODO write tests for the following functions
