@@ -103,8 +103,6 @@ def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
     for r in mergedtups:
         if not r.conditions:
             c_ltl = Top()
-        elif len(r.conditions) == 1:
-            c_ltl = Var(r.conditions[0])
         else:
             c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
         e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
