@@ -43,23 +43,17 @@ class DLTransitionModelTest(unittest.TestCase):
     tm = DLTransitionModel(i, states)
 
     f = dlplan.SyntacticElementFactory(v)
-    n_feature = f.parse_numerical("n_count(c_primitive(clear,0))")
+    n_feature: dlplan.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
+    n_feature.set_index(0)
     b_feature = f.parse_boolean("b_empty(c_primitive(holding,0))")
+    b_feature.set_index(0)
 
     def test_something(self):
-        num_tm = add_feature_propositions(self.tm, self.n_feature)
-        #print(self.tm.states)
-        #print(num_tm.states)
 
-        #print(self.tm.instance_info.get_atoms())
-        #print(num_tm.instance_info.get_atoms())
-
-        bool_tm = add_feature_propositions(self.tm, self.b_feature)
-        print(self.tm.states)
+        # bool_tm = add_feature_propositions(self.tm, self.b_feature)
+        bool_tm = add_features2(self.tm, [self.b_feature])
         print(bool_tm.states)
 
-        print(self.tm.instance_info.get_atoms())
-        print(bool_tm.instance_info.get_atoms())
 
 
 if __name__ == '__main__':
