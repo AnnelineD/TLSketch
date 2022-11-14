@@ -1,3 +1,5 @@
+from typing import Union
+
 import dlplan
 
 
@@ -31,3 +33,10 @@ def show_rule(r: dlplan.Rule) -> str:
 
 def show_sketch(s: dlplan.Policy) -> str:
     return '\n'.join([show_rule(r) for r in s.get_rules()])
+
+
+def repr_feature(f: Union[dlplan.Numerical, dlplan.Boolean]) -> str:
+    match f:
+        case x if isinstance(x, dlplan.Boolean): return f"b{f.get_index()}"
+        case x if isinstance(x, dlplan.Numerical): return f"n{f.get_index()}"
+        case _: print("something went wrong with the feature representation")  # TODO raise error
