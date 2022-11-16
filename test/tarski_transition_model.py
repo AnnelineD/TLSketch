@@ -9,7 +9,11 @@ class MyTestCase(unittest.TestCase):
     problem = reader.parse_instance('../blocks_4_clear/p-3-0.pddl')
 
     def test_something(self):
-        self.assertEqual(len(tarski_transition_model(self.problem)), 22)
+
+        st, g = tarski_transition_model(self.problem)
+        self.assertEqual(len(st), 22)
+        self.assertEqual(len(st), g.size())
+        print(tarski_transition_model(self.problem)[1].show())
 
 
 if __name__ == '__main__':
