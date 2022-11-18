@@ -6,9 +6,10 @@ from src.transition_system.graph import DirectedGraph
 
 
 class TarskiTransitionSystem:
-    def __init__(self, problem: TProblem):
-        self.problem = problem
-        self.states, self.graph = tarski_transition_model(problem)
+    def __init__(self, d_problem: TProblem, i_problem: TProblem):
+        self.domain = d_problem
+        self.instance = i_problem
+        self.states, self.graph = tarski_transition_model(i_problem)
 
 
 def tarski_transition_model(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
