@@ -53,6 +53,13 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(tstate_atoms_as_strs, dlstate_atoms_as_strs)
 
+    def test_system_conv(self):
+        t_system = TarskiTransitionSystem(self.d_problem, self.i_problem)
+        dl_system = tarski_to_dl_system(t_system)
+        self.assertEqual(0, dl_system.initial_state.get_index())
+        print(t_system.states)
+        print(dl_system.states)
+
 
 if __name__ == '__main__':
     unittest.main()
