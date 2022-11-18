@@ -4,8 +4,10 @@ import ltl
 
 from src.logics.sketch_to_ltl import *
 from src.dlplan_utils import *
-from utils import ass_same_elements
+from test.utils import ass_same_elements
 
+
+# FIXME lists in assertion differ sometimes because the order of conditions doesn't matter
 
 class ToLTLTest(unittest.TestCase):
 

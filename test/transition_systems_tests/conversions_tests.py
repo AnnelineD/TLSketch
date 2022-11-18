@@ -3,10 +3,10 @@ from src.transition_system.conversions import *
 
 
 class MyTestCase(unittest.TestCase):
-    d_problem, i_problem = get_tarski_domain_and_instance('../blocks_4_clear/domain.pddl', '../blocks_4_clear/p-3-0.pddl')
+    d_problem, i_problem = get_tarski_domain_and_instance('../../blocks_4_clear/domain.pddl', '../../blocks_4_clear/p-3-0.pddl')
     i = dlinstance_from_tarski(d_problem.language, i_problem.language)
 
-    domain_pr_2, instance_pr_2 = get_tarski_domain_and_instance('../gripper/domain.pddl', '../gripper/p-3-0.pddl')
+    domain_pr_2, instance_pr_2 = get_tarski_domain_and_instance('../../gripper/domain.pddl', '../../gripper/p-3-0.pddl')
     i_2 = dlinstance_from_tarski(domain_pr_2.language, instance_pr_2.language)
 
     def test_predicate_conversion(self):

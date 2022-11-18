@@ -15,7 +15,7 @@ class MyTestCase(unittest.TestCase):
         return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
 
     def test_blocks_clear(self):
-        factory = self.get_factory("../blocks_4_clear/domain.pddl", "../blocks_4_clear/p-3-0.pddl")
+        factory = self.get_factory("../../blocks_4_clear/domain.pddl", "../../blocks_4_clear/p-3-0.pddl")
 
         """
         {} -> {h, n=}
@@ -48,7 +48,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(wanted_ltl_0, fill_in_rules(arrow_sketch_0.rules, {n: 2}))
 
     def test_blocks_on(self):
-        factory = self.get_factory("../blocks_4_on/domain.pddl", "../blocks_4_on/p-3-0.pddl")
+        factory = self.get_factory("../../blocks_4_on/domain.pddl", "../../blocks_4_on/p-3-0.pddl")
 
         """
         {¬b1} -> {n0=, b0=}
@@ -76,7 +76,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(wanted_rules_0, arrow_sketch_0.rules)
 
     def test_gripper(self):
-        factory = self.get_factory("../gripper/domain.pddl", "../gripper/p-3-0.pddl")
+        factory = self.get_factory("../../gripper/domain.pddl", "../../gripper/p-3-0.pddl")
         v: dlplan.VocabularyInfo = factory.get_vocabulary_info()
         v.get_predicates()
 

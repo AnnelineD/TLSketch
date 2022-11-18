@@ -43,16 +43,16 @@ class MyTestCase(unittest.TestCase):
         smv_var = """VAR 
   state: {s0, s1};
 ASSIGN 
-  init(state) := 0; 
+  init(state) := s0; 
   next(state) := case 
           state = s0: {s1};
           state = s1: {s0};
                  esac;"""
         smv_features = """DEFINE 
   	b0 := case 
-		state = s0: True;
-		state = s1: False;
- 	 esac;"""
+		state = s0: TRUE;
+		state = s1: FALSE; 
+	esac;"""
         self.assertEqual(smv_var, convert_transition_system(self.tm))
         self.assertEqual(smv_features, convert_features(self.ftm))
 

@@ -25,8 +25,8 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_blocks_clear(self):
-        blocks_clear_domain = "../blocks_4_clear/domain.pddl"
-        blocks_clear_instance = "../blocks_4_clear/p-3-0.pddl"
+        blocks_clear_domain = "../../blocks_4_clear/domain.pddl"
+        blocks_clear_instance = "../../blocks_4_clear/p-3-0.pddl"
         sketch_0 = '(:policy\n'\
                     '(:boolean_features "b_nullary(arm-empty)")\n'\
                     '(:numerical_features "n_count(c_primitive(on,0))")\n'\
