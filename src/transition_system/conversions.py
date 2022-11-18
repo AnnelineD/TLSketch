@@ -1,6 +1,7 @@
 import dlplan
 from src.transition_system.tarski_transition_model import *
 from src.transition_system.tarski_manipulation import sort_constants, typed_permutations
+from src.transition_system.dl_transition_model import DLTransitionModel
 
 
 def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str, int]:
@@ -41,9 +42,15 @@ def tmodel_to_dlstate(state: TModel, i: dlplan.InstanceInfo) -> dlplan.State:
     return dlplan.State(i, [i.get_atom(i.get_atom_idx(str(a))) for a in state.as_atoms()])
 
 
-def tmodels_to_dlstates(states: set[TModel], i: dlplan.InstanceInfo) -> set[dlplan.State]:
-    return {tmodel_to_dlstate(tstate, i) for tstate in states}
+def tmodels_to_dlstates(states: list[TModel], i: dlplan.InstanceInfo) -> list[dlplan.State]:
+    return [tmodel_to_dlstate(tstate, i) for tstate in states]
 
+
+def tarski_to_dl_system(ts: TarskiTransitionSystem) -> DLTransitionModel:
+    i = dlinstance_from_tarski(ts.domain.language, ts.instance.language)
+    states = tmodels_to_dlstates(ts.states, i)
+    init = states[ts.states.index(ts.instance.init)]
+    return DLTransitionModel(i, states, init, ts.graph)
 
 
 """
