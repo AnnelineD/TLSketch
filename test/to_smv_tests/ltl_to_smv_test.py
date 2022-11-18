@@ -5,7 +5,7 @@ import dlplan
 from ltl import *
 
 from src.logics.feature_vars import BooleanVar, NumericalVar
-from src.to_model_checker.model_check_input import ltl_to_smv
+from src.to_smv.model_check_input import ltl_to_smv
 
 dlplanb = dlplan.Boolean
 dlplann = dlplan.Numerical

@@ -2,7 +2,7 @@ import unittest
 
 import dlplan
 
-from src.to_model_checker.model_check_input import *
+from src.to_smv.model_check_input import *
 from src.transition_system.graph import DirectedGraph
 
 

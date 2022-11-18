@@ -6,7 +6,7 @@ from src.transition_system.conversions import tarski_to_dl_system
 from src.transition_system.dl_transition_model import DLTransitionModel
 from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
 from src.transition_system.tarski_transition_model import TarskiTransitionSystem
-from src.to_model_checker.model_check_input import *
+from src.to_smv.model_check_input import *
 
 
 class MyTestCase(unittest.TestCase):
