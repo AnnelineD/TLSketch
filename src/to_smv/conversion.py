@@ -4,7 +4,7 @@ from ltl import *
 from src.logics.feature_vars import *
 
 
-def convert_transition_system(transition_system: DLTransitionModel):
+def transition_system_to_smv(transition_system: DLTransitionModel):
     nl = '\n'   # f-strings cannot include backslashes
     return f"VAR \n" \
         f"  state: {{{', '.join([f's{i}' for i, s in enumerate(transition_system.states)])}}};\n" \
@@ -15,7 +15,7 @@ def convert_transition_system(transition_system: DLTransitionModel):
         f"                 esac;"
 
 
-def convert_features(ts: DLFeatureTransitionModel):
+def features_to_smv(ts: DLFeatureTransitionModel):
     tab = '\t'
     nl = '\n'
     return f"DEFINE \n " \

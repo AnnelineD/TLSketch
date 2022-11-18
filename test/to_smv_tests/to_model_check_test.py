@@ -2,7 +2,7 @@ import unittest
 
 import dlplan
 
-from src.to_smv.model_check_input import *
+from src.to_smv.conversion import *
 from src.transition_system.graph import DirectedGraph
 
 
@@ -38,8 +38,8 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_something(self):
-        print(convert_transition_system(self.tm))
-        print(convert_features(self.ftm))
+        print(transition_system_to_smv(self.tm))
+        print(features_to_smv(self.ftm))
         smv_var = """VAR 
   state: {s0, s1};
 ASSIGN 
@@ -53,8 +53,8 @@ ASSIGN
 		state = s0: TRUE;
 		state = s1: FALSE; 
 	esac;"""
-        self.assertEqual(smv_var, convert_transition_system(self.tm))
-        self.assertEqual(smv_features, convert_features(self.ftm))
+        self.assertEqual(smv_var, transition_system_to_smv(self.tm))
+        self.assertEqual(smv_features, features_to_smv(self.ftm))
 
 
 if __name__ == '__main__':

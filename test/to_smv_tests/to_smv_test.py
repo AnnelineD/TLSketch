@@ -6,7 +6,7 @@ from src.transition_system.conversions import tarski_to_dl_system
 from src.transition_system.dl_transition_model import DLTransitionModel
 from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
 from src.transition_system.tarski_transition_model import TarskiTransitionSystem
-from src.to_smv.model_check_input import *
+from src.to_smv.conversion import *
 
 
 class MyTestCase(unittest.TestCase):
@@ -20,8 +20,8 @@ class MyTestCase(unittest.TestCase):
 
         dl_ts_f = dl_ts.add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
         print(dl_ts.states)
-        print(convert_transition_system(dl_ts))
-        print(convert_features(dl_ts_f))
+        print(transition_system_to_smv(dl_ts))
+        print(features_to_smv(dl_ts_f))
 
 
     def test_blocks_clear(self):
