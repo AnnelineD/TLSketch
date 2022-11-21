@@ -46,8 +46,7 @@ def tmodels_to_dlstates(states: list[TModel], i: dlplan.InstanceInfo) -> list[dl
     return [tmodel_to_dlstate(tstate, i) for tstate in states]
 
 
-def tarski_to_dl_system(ts: TarskiTransitionSystem) -> DLTransitionModel:
-    i = dlinstance_from_tarski(ts.domain.language, ts.instance.language)
+def tarski_to_dl_system(ts: TarskiTransitionSystem, i) -> DLTransitionModel:
     states = tmodels_to_dlstates(ts.states, i)
     init = states[ts.states.index(ts.instance.init)]
     return DLTransitionModel(i, states, init, ts.graph)
