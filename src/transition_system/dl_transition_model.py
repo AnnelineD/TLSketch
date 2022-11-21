@@ -27,6 +27,14 @@ class DLFeatureTransitionModel:
         self.transition_model = model
         self.features: dict[Feature, dict[dlplan.State, Union[bool, int]]] = features
 
+    def get_feature_bounds(self) -> dict[dlplan.Numerical, int]:
+        bounds = dict[dlplan.Numerical, int]()
+        for f, ss in self.features.items():
+            if isinstance(f, dlplan.Numerical):
+                vals: list[int] = [v for v in ss.values()]
+                bounds.update({f: max(vals)})
+        return bounds
+
 
 def eval_feature(feature, states: set[DLState]) -> dict[DLState, Feature]:
     return {s: feature.evaluate(s) for s in states}
