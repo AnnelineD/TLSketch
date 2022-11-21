@@ -59,7 +59,11 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
                         new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
                     else:
                         new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
-                case EIncr(f): new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))  # FIXME edge cases
+                case EIncr(f):
+                    if bounds[f] - c_dict[f].value <= 1:
+                        new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f]))
+                    else:
+                        new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
                 case ENAny(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
         # if LTLRule(new_condition, new_effect) not in
         new_rules.append(LTLRule(new_condition, new_effect))
