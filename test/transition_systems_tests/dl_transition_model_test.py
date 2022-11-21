@@ -59,6 +59,8 @@ class DLTransitionModelTest(unittest.TestCase):
         self.assertEqual({self.n_feature: {self.tm.states[0]: 1, self.tm.states[1]: 1, self.tm.states[2]: 2, self.tm.states[3]: 1, self.tm.states[4]: 1}},
                          num_tm.features)
 
+        self.assertEqual({self.n_feature: 2}, num_tm.get_feature_bounds())
+
 
 
 if __name__ == '__main__':
