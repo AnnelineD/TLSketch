@@ -1,52 +1,34 @@
-from src.transition_system.dl_transition_model import *
-from src.transition_system.conversions import *
-from dlplan import PolicyReader
-from src.logics.sketch_to_ltl import *
+import dlplan
+
+from examples import *
+from src.logics.rules import LTLSketch
+from src.to_smv.conversion import *
+from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules
 
 
-def pddl_to_dlplan_states(domain_file: str, instance_file: str):
-    reader = PDDLReader(raise_on_error=True)
-    tproblem: TProblem = reader.read_problem(domain_file, instance_file)
-    tsystem = TarskiTransitionSystem(tproblem)
+def main():
+    domain = BlocksOn()
+    #print("MODULE main")
+    #print(transition_system_to_smv(domain.dl_system()))
 
-    i = dlinstance_from_tarski(tproblem.language)
-    dlstates = tmodels_to_dlstates(tsystem.states, i)
-    dlsystem = DLTransitionModel(i, dlstates)
-    return dlsystem
+    sketch = domain.sketch_0()
+    f1 = sketch.get_boolean_features()[0]
+    print(f1, f1.get_index())
+    print("sketch", sketch)
+    print("rule", sketch.get_rules()[0])
+    print()
+    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    # print(features_to_smv(f_domain))
+    arrow_sketch = policy_to_arrowsketch(sketch)
+    print("features: ", f_domain.features.keys())
+    print("arrow:", arrow_sketch.show())
+    print("arrow2: ", arrow_sketch.rules)
+    print(f_domain.get_feature_bounds())
+    ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
+    ltl_sketch = LTLSketch(ltl_rules)
+
+    print(ltl_sketch.show())
 
 
 if __name__ == '__main__':
-    dlsystem = pddl_to_dlplan_states("blocks_4_clear/domain.pddl", "blocks_4_clear/p-3-0.pddl")
-    factory = dlplan.SyntacticElementFactory(dlsystem.instance_info.get_vocabulary_info())
-    n = factory.parse_numerical("n_count(c_primitive(on,0))")
-    H = factory.parse_boolean("b_nullary(arm-empty)")
-    feature_sys = add_features(dlsystem, {n, H})
-
-    # print(feature_sys.states)
-
-    sketch: dlplan.Policy = PolicyReader().read('(:policy'
-                                                '\n(:boolean_features "b_nullary(arm-empty)")'
-                                                '\n(:numerical_features "n_count(c_primitive(on,0))")'
-                                                '\n(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_pos 0) (:e_n_bot 0)))'
-                                                '\n(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))'
-                                                '\n)', factory)
-
-    r: dlplan.Rule = sketch.get_rules()[0]
-    r2 = sketch.get_rules()[1]
-    c: dlplan.BaseCondition = r.get_conditions()[0]
-    #print(c.get_base_feature())
-    #print("here", type(r.get_conditions()))
-    from src.dlplan_utils import show_sketch
-    #print(show_condition(c, "c"))
-
-    print(show_sketch(sketch))
-
-    arrow_ltl = policy_to_arrowsketch(sketch)
-
-    for r in arrow_ltl.full_rules:
-        print(r.show())
-
-    # print(policy_to_rule_tuples(sketch))
-
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
