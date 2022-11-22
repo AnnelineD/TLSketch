@@ -11,7 +11,7 @@ class FromFile:
         dproblem, iproblem = get_tarski_domain_and_instance(domain_file, instance_file)
         self._dproblem = dproblem
         self._iproblem = iproblem
-        self._instance = dlinstance_from_tarski(dproblem.language, iproblem.language)
+        self._instance = dlinstance_from_tarski(dproblem, iproblem)
 
     def tarski_system(self) -> TarskiTransitionSystem:
         return TarskiTransitionSystem(self._dproblem, self._iproblem)
@@ -46,6 +46,20 @@ class BlocksOn(FromFile):
 
     def sketch_2(self):
         return self.read_sketch("drexler_sketches/blocks-on/blocks-on_2.txt")
+
+
+class BlocksClear(FromFile):
+    def __init__(self, instance_file="blocks_4_clear/p-3-0.pddl"):
+        super().__init__("blocks_4_clear/domain.pddl", instance_file)
+
+    def sketch_0(self) -> dlplan.Policy:
+        return self.read_sketch("drexler_sketches/blocks-clear/blocks-clear_0.txt")
+
+    def sketch_1(self):
+        return self.read_sketch("drexler_sketches/blocks-clear/blocks-clear_1.txt")
+
+    def sketch_2(self):
+        return self.read_sketch("drexler_sketches/blocks-clear/blocks-clear_2.txt")
 
 
 class Gripper(FromFile):

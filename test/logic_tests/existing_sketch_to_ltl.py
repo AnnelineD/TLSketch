@@ -10,7 +10,7 @@ from src.transition_system.tarski_transition_model import *
 class MyTestCase(unittest.TestCase):
     def get_factory(self, domain_file: str, instance_file: str):
         dproblem, iproblem = get_tarski_domain_and_instance(domain_file, instance_file)
-        i = dlinstance_from_tarski(dproblem.language, iproblem.language)
+        i = dlinstance_from_tarski(dproblem, iproblem)
 
         return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
 
