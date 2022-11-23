@@ -9,7 +9,7 @@ Feature = Union[dlplan.Boolean, dlplan.Numerical]
 
 
 class DLTransitionModel:
-    def __init__(self, instance_info: dlplan.InstanceInfo, states: list[dlplan.State], init: dlplan.State, graph: DirectedGraph):
+    def __init__(self, instance_info: dlplan.InstanceInfo, states: list[dlplan.State], init: dlplan.State, goal_state_indices: list[int], graph: DirectedGraph):
         for i, s in enumerate(states):
             assert(s.get_instance_info() == instance_info)
             s.set_index(i)
@@ -17,6 +17,7 @@ class DLTransitionModel:
         self.graph = graph
         self.instance_info = instance_info
         self.states = states
+        self.goal_states = goal_state_indices
 
     def add_features(self, features: list[Feature]):
         return DLFeatureTransitionModel(self, eval_features(features, self.states))

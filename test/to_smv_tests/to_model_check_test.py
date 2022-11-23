@@ -27,7 +27,7 @@ class MyTestCase(unittest.TestCase):
         g.add(n0, n1, "lower")
         g.add(n1, n0, "raise")
 
-        self.tm = DLTransitionModel(i, states, s0, g)
+        self.tm = DLTransitionModel(i, states, s0, [], g)
 
         f = dlplan.SyntacticElementFactory(v)
         b_feature = f.parse_boolean("b_nullary(raise))")

@@ -40,7 +40,7 @@ class DLTransitionModelTest(unittest.TestCase):
     s4 = dlplan.State(i, [a2, a5, a6])
     states = [s0, s1, s2, s3, s4]
 
-    tm = DLTransitionModel(i, states, s0, DirectedGraph())
+    tm = DLTransitionModel(i, states, s0, [], DirectedGraph())
 
     f = dlplan.SyntacticElementFactory(v)
     n_feature: dlplan.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
