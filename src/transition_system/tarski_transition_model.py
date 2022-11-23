@@ -10,6 +10,27 @@ class TarskiTransitionSystem:
         self.domain = d_problem
         self.instance = i_problem
         self.states, self.graph = tarski_transition_model(i_problem)
+        self.goal_states = self._calc_goal_states()
+
+    def _calc_goal_list(self) -> list[tarski.syntax.Atom]:
+        match self.instance.goal:
+            case tarski.syntax.Atom() as x: return [x]
+            case tarski.syntax.CompoundFormula() as c:
+                match c.connective:
+                    case tarski.syntax.Connective.And:
+                        return [s for s in c.subformulas]
+                    case _:
+                        raise NotImplementedError(c.connective)
+            case _: raise NotImplementedError
+
+    def _calc_goal_states(self) -> list[int]:
+        gs = list[int]()
+        goal_list = self._calc_goal_list()
+        for i, s in enumerate(self.states):
+            if all(g in s.as_atoms() for g in goal_list):
+                gs.append(i)
+        return gs
+
 
 
 def tarski_transition_model(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
