@@ -63,7 +63,7 @@ class BlocksClear(FromFile):
 
 
 class Gripper(FromFile):
-    def __init__(self, instance_file="gripper/p-3-0.pddl"):
+    def __init__(self, instance_file="gripper/p-1-0.pddl"):
         super().__init__("gripper/domain.pddl", instance_file)
 
     def sketch_0(self):
