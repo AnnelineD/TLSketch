@@ -230,6 +230,10 @@ class ToLTLTest(unittest.TestCase):
 
         self.assertEqual(rs_2, wanted_rs_2)
 
+    def test_goal(self):
+        arrow_sketch = policy_to_arrowsketch(self.p1)
+        self.assertEqual(arrow_sketch.goal, Var("goal"))
+
 
 
 
