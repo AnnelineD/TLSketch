@@ -19,18 +19,17 @@ def features_to_smv(ts: DLFeatureTransitionModel):
     tab = '\t'
     nl = '\n'
     return f"DEFINE \n " \
-    f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s.get_index()}: {str(ts.features[fn][s]).upper()};' for s in ts.transition_model.states)} {nl + tab}esac;''' for fn in ts.features.keys())}"
+    f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s.get_index()}: {str(ts.features[fn][s]).upper()};' for s in ts.transition_model.states)} {nl + tab}esac;''' for fn in ts.features.keys())}\n"\
+    f"{tab}goal := state in {{{', '.join({f's{i}' for i in ts.transition_model.goal_states})}}};"
 
 
-def ltl_to_smv(ltl) -> str:
+def ltl_to_smv(ltl: LTLFormula) -> str:
     match ltl:
         case Top(): return "TRUE"
         case Bottom(): return "FALSE"
         case BooleanVar(f, v): return f"{repr_feature(f)}={str(v).upper()}"
         case NumericalVar(f, v): return f"{repr_feature(f)}={str(v).upper()}"
-        case Var(s) as x:
-            print(f"error: normal var {x} in ltl formula") # TODO exception handling
-            return None
+        case Var(s) as x: return f"{s}"  # TODO make a special goal var
         case Not(p): return f"!{ltl_to_smv(p)}"
         case And(p, q): return f"({ltl_to_smv(p)} & {ltl_to_smv(q)})"
         case Or(p, q): return f"({ltl_to_smv(p)} | {ltl_to_smv(q)})"
@@ -45,5 +44,5 @@ def ltl_to_smv(ltl) -> str:
             return f"{ltl_to_smv(Release(q, p | q))}"
         case Strong(p, q):  # = Until(q, And(p, q))
             return f"({ltl_to_smv(Until(q, p & q))})"
-        case _: raise NotImplementedError
+        case _: raise NotImplementedError(ltl)
 
