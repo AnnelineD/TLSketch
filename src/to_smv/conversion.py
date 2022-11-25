@@ -2,17 +2,23 @@ from src.transition_system.dl_transition_model import DLTransitionModel, DLFeatu
 from src.dlplan_utils import repr_feature
 from ltl import *
 from src.logics.feature_vars import *
+from src.transition_system.graph import DirectedGraph
+
+
+def graph_to_smv(graph: DirectedGraph, init_index):
+    assert init_index < graph.size()
+    nl = '\n'   # f-strings cannot include backslashes
+    return f"VAR \n" \
+        f"  state: {{{', '.join([f's{i}' for i in range(graph.size())])}}};\n" \
+        f"ASSIGN \n" \
+        f"  init(state) := s{init_index}; \n" \
+        f"  next(state) := case \n" \
+        f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in graph.nbs(i)) }}};''' for i in range(graph.size()))}\n" \
+        f"                 esac;"
 
 
 def transition_system_to_smv(transition_system: DLTransitionModel):
-    nl = '\n'   # f-strings cannot include backslashes
-    return f"VAR \n" \
-        f"  state: {{{', '.join([f's{i}' for i, s in enumerate(transition_system.states)])}}};\n" \
-        f"ASSIGN \n" \
-        f"  init(state) := s{transition_system.initial_state.get_index()}; \n" \
-        f"  next(state) := case \n" \
-        f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in transition_system.graph.nbs(i)) }}};''' for i, s in enumerate(transition_system.states))}\n" \
-        f"                 esac;"
+    return graph_to_smv(transition_system.graph, transition_system.initial_state.get_index())
 
 
 def features_to_smv(ts: DLFeatureTransitionModel):
