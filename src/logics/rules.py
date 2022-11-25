@@ -87,11 +87,11 @@ class LTLSketchAbs:
     rules: list[Rule]
     goal: any
 
-    def __init__(self, rules: list[Rule], goal: any):
+    def __init__(self, rules: list[Rule]):
         self.rules = rules
-        self.goal = goal
+        self._goal = Var("goal")
 
-        self.alive = Finally(goal)  # There exists a path such that finally goal
+        self.alive = Finally(self._goal)  # There exists a path such that finally goal
         self.dead = ~self.alive
 
     def get_conditions(self):
@@ -106,13 +106,13 @@ class LTLSketchAbs:
         return reduce(And, map(rule_statement, self.rules))
 
     def one_condition_must_hold(self) -> LTLFormula:
-        return Globally(reduce(Or, self.get_conditions()) | self.dead | self.goal)
+        return Globally(reduce(Or, self.get_conditions()) | self.dead | self._goal)
 
     def show(self) -> str:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
-    def get_formula(self, goal) -> LTLFormula:
-        return Then(Globally(self.rule_should_be_followed()), Finally(goal)) & self.one_condition_must_hold()
+    def get_formula(self) -> LTLFormula:
+        return Then(Globally(self.rule_should_be_followed()), Finally(self._goal)) & self.one_condition_must_hold()
 
 
 # Instance dependent
@@ -124,9 +124,6 @@ class LTLSketch(LTLSketchAbs):
 class ArrowLTLSketch(LTLSketchAbs):
     rules: list[ArrowLTLRule]
     goal = Var("goal")
-
-    def __init__(self, rules: list[ArrowLTLRule]):
-        super().__init__(rules, Var("goal"))
 
     def to_LTLSketch(self, feature_bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
         pass  # TODO rearange methods from sketch_to_ltl here

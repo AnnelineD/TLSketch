@@ -31,8 +31,8 @@ def main():
     print("MODULE main")
     print(transition_system_to_smv(domain.dl_system()))
     print(features_to_smv(f_domain))
-    ltl_sketch = LTLSketch(ltl_rules, Var("goal"))
-    print(ltl_to_smv(ltl_sketch.get_formula(Var("goal"))))
+    ltl_sketch = LTLSketch(ltl_rules)
+    print(ltl_to_smv(ltl_sketch.get_formula()))
 
 
 if __name__ == '__main__':
