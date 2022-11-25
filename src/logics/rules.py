@@ -85,39 +85,48 @@ class ArrowLTLRule(Rule):
 
 class LTLSketchAbs:
     rules: list[Rule]
+    goal: any
 
-    goal = Var("goal")
-    alive = Finally(goal)  # There exists a path such that finally goal
-    dead = ~alive
-
-    def __init__(self, rules: list[LTLRule]):
+    def __init__(self, rules: list[Rule], goal: any):
         self.rules = rules
+        self.goal = goal
 
-    def _get_conditions(self):
+        self.alive = Finally(goal)  # There exists a path such that finally goal
+        self.dead = ~self.alive
+
+    def get_conditions(self):
         return [r.conditions for r in self.rules]
 
-    def _rule_should_be_followed(self) -> LTLFormula:
-        def rule_statement(c, e) -> LTLFormula:
-            return Then(c, Until(~(e & self.dead), e & self.alive))
+    def rule_should_be_followed(self) -> LTLFormula:
+        def rule_statement(s) -> LTLFormula:
+            c, e = s
+            #return Then(c, Until(~(e & self.dead), e & self.alive))
+            return Then(c, Finally(e))
 
         return reduce(And, map(rule_statement, self.rules))
 
-    def _one_condition_must_hold(self) -> LTLFormula:
-        return Globally(reduce(Or, self._get_conditions()) | self.dead | self.goal)
+    def one_condition_must_hold(self) -> LTLFormula:
+        return Globally(reduce(Or, self.get_conditions()) | self.dead | self.goal)
 
     def show(self) -> str:
         return "\n".join(Then(c, Finally(e)).show() for c, e in self.rules)
 
     def get_formula(self, goal) -> LTLFormula:
-        return self._rule_should_be_followed() and self._one_condition_must_hold() and Finally(goal)
+        return Then(Globally(self.rule_should_be_followed()), Finally(goal)) & self.one_condition_must_hold()
 
 
+# Instance dependent
 class LTLSketch(LTLSketchAbs):
     rules: list[LTLRule]
 
 
+# Domain but not instance dependent
 class ArrowLTLSketch(LTLSketchAbs):
     rules: list[ArrowLTLRule]
+    goal = Var("goal")
+
+    def __init__(self, rules: list[ArrowLTLRule]):
+        super().__init__(rules, Var("goal"))
 
     def to_LTLSketch(self, feature_bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
         pass  # TODO rearange methods from sketch_to_ltl here
