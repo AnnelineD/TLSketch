@@ -6,6 +6,8 @@ from src.transition_system.tarski_manipulation import get_tarski_domain_and_inst
 from src.transition_system.tarski_transition_model import *
 
 
+# TODO absolute/relative paths for file reading
+
 class FromFile:
     def __init__(self, domain_file: str, instance_file: str):
         dproblem, iproblem = get_tarski_domain_and_instance(domain_file, instance_file)
@@ -63,8 +65,8 @@ class BlocksClear(FromFile):
 
 
 class Gripper(FromFile):
-    def __init__(self, instance_file="gripper/p-1-0.pddl"):
-        super().__init__("gripper/domain.pddl", instance_file)
+    def __init__(self, instance_file="../../gripper/p-1-0.pddl"):
+        super().__init__("../../gripper/domain.pddl", instance_file)
 
     def sketch_0(self):
         return self.read_sketch("drexler_sketches/gripper/gripper_0.txt")
@@ -74,3 +76,21 @@ class Gripper(FromFile):
 
     def sketch_2(self):
         return self.read_sketch("drexler_sketches/gripper/gripper_2.txt")
+
+
+class Childsnack(FromFile):
+    def __init__(self, instance_file="childsnack/p-2-1.0-0.0-1-0.pddl"):
+        super().__init__("childsnack/domain.pddl", instance_file)
+
+    def sketch_1(self):
+        return self.read_sketch("drexler_sketches/childsnack/childsnack_1.txt")
+
+class Miconic(FromFile):
+    def __init__(self, instance_file="miconic/p-2-2-0.pddl"):
+        super().__init__("miconic/domain.pddl", instance_file)
+
+    def sketch_1(self):
+        return self.read_sketch("drexler_sketches/miconic/miconic_1.txt")
+
+    def sketch_2(self):
+        return self.read_sketch("drexler_sketches/miconic/miconic_2.txt")
