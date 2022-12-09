@@ -11,6 +11,8 @@ class TarskiTransitionSystem:
         self.instance = i_problem
         self.states, self.graph = tarski_transition_model(i_problem)
         self.goal_states = self._calc_goal_states()
+        for s in self.goal_states:
+            self.graph.add(s, s, "goal")
 
     def _calc_goal_list(self) -> list[tarski.syntax.Atom]:
         match self.instance.goal:
@@ -30,7 +32,6 @@ class TarskiTransitionSystem:
             if all(g in s.as_atoms() for g in goal_list):
                 gs.append(i)
         return gs
-
 
 
 def tarski_transition_model(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
