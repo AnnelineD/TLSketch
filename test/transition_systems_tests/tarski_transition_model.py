@@ -1,6 +1,7 @@
 import unittest
 
 from src.transition_system.tarski_transition_model import *
+from examples import *
 
 
 class MyTestCase(unittest.TestCase):
@@ -13,7 +14,20 @@ class MyTestCase(unittest.TestCase):
         st, g = tarski_transition_model(self.problem)
         self.assertEqual(len(st), 22)
         self.assertEqual(len(st), g.size())
+        for i, (n, nbs) in enumerate(g.adj):
+            print(i, n)
+            print(i in n)
+            self.assertFalse(i in n)
+
         print(tarski_transition_model(self.problem)[1].show())
+
+    def test_gripper(self):
+
+        domain = Gripper()
+        print(domain.tarski_system().graph.adj)
+        for i, (n, nbs) in enumerate(domain.tarski_system().graph.adj):  # test no self loops
+            if i not in domain.tarski_system().goal_states:
+                self.assertFalse(i in n)
 
 
 if __name__ == '__main__':
