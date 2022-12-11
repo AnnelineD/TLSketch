@@ -9,10 +9,12 @@ from src.to_smv.conversion import *
 from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules
 
 
-def main():
-    domain = BlocksClear()
+def show_domain_info():
+    domain = Miconic()
+    print(domain.dl_system().graph.show())
+    print(domain.dl_system().graph.adj)
 
-    sketch = domain.sketch_1()
+    sketch = domain.sketch_2()
     print("sketch", sketch)
     print()
     f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
@@ -32,7 +34,19 @@ def main():
     print(transition_system_to_smv(domain.dl_system()))
     print(features_to_smv(f_domain))
     ltl_sketch = LTLSketch(ltl_rules)
-    print(ltl_to_smv(ltl_sketch.get_formula()))
+    for r in ltl_sketch.rules:
+        print(r.show())
+
+def main():
+    domain = Gripper()
+    sketch = domain.sketch_1()
+    print("sketch", sketch)
+    arrow_sketch = policy_to_arrowsketch(sketch)
+    print(arrow_sketch.show())
+    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
+    for r in ltl_rules:
+        print(r.show())
 
 
 if __name__ == '__main__':
