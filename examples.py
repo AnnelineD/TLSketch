@@ -3,7 +3,7 @@ import dlplan
 from src.transition_system.conversions import tarski_to_dl_system, dlinstance_from_tarski
 from src.transition_system.dl_transition_model import DLTransitionModel
 from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
-from src.transition_system.tarski_transition_model import *
+from src.transition_system import tarski_transition_model
 
 
 # TODO absolute/relative paths for file reading
@@ -15,8 +15,8 @@ class FromFile:
         self._iproblem = iproblem
         self._instance = dlinstance_from_tarski(dproblem, iproblem)
 
-    def tarski_system(self) -> TarskiTransitionSystem:
-        return TarskiTransitionSystem(self._dproblem, self._iproblem)
+    def tarski_system(self) -> tarski_transition_model.TarskiTransitionSystem:
+        return tarski_transition_model.from_instance(self._iproblem)
 
     def factory(self) -> dlplan.SyntacticElementFactory:
         return dlplan.SyntacticElementFactory(self._instance.get_vocabulary_info())

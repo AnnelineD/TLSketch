@@ -1,5 +1,6 @@
 import unittest
 from src.transition_system.conversions import *
+from src.transition_system import tarski_transition_model
 
 
 class MyTestCase(unittest.TestCase):
@@ -72,7 +73,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(['at_g(ball1,roomb)', 'at_g(ball2,roomb)', 'at_g(ball3,roomb)'], [a.get_name() for a in i_gripper.get_static_atoms()])
 
     def test_system_conv(self):
-        t_system = TarskiTransitionSystem(self.d_problem, self.i_problem)
+        t_system = tarski_transition_model.from_instance(self.i_problem)
         dl_system = tarski_to_dl_system(t_system, self.i)
         self.assertEqual(0, dl_system.initial_state.get_index())
         # print(t_system.states)

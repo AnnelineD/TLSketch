@@ -11,7 +11,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_something(self):
 
-        st, g = tarski_transition_model(self.problem)
+        st, g = construct_graph(self.problem)
         self.assertEqual(len(st), 22)
         self.assertEqual(len(st), g.size())
         for i, (n, nbs) in enumerate(g.adj):
@@ -19,7 +19,7 @@ class MyTestCase(unittest.TestCase):
             print(i in n)
             self.assertFalse(i in n)
 
-        print(tarski_transition_model(self.problem)[1].show())
+        print(construct_graph(self.problem)[1].show())
 
     def test_gripper(self):
 

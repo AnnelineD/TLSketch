@@ -2,10 +2,10 @@ import unittest
 
 import dlplan
 
-from src.transition_system.conversions import tarski_to_dl_system
+from src.transition_system.conversions import *
 from src.transition_system.dl_transition_model import DLTransitionModel
 from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
-from src.transition_system.tarski_transition_model import TarskiTransitionSystem
+from src.transition_system import tarski_transition_model
 from src.to_smv.conversion import *
 
 
@@ -13,8 +13,9 @@ class MyTestCase(unittest.TestCase):
 
     def print_smv(self, domain_file, instance_file, sketch: str):
         d, i = get_tarski_domain_and_instance(domain_file, instance_file)
-        tarski_ts = TarskiTransitionSystem(d, i)
-        dl_ts = tarski_to_dl_system(tarski_ts)
+        tarski_ts = tarski_transition_model.from_instance(i)
+        di = dlinstance_from_tarski(d, i)
+        dl_ts = tarski_to_dl_system(tarski_ts, di)
         factory = dlplan.SyntacticElementFactory(dl_ts.instance_info.get_vocabulary_info())
         sketch: dlplan.Policy = dlplan.PolicyReader().read(sketch, factory)
 
