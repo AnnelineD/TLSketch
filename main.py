@@ -50,4 +50,4 @@ def main():
 
 
 if __name__ == '__main__':
-    show_domain_info()
+    main()

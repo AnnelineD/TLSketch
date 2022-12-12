@@ -1,7 +1,7 @@
 import itertools
 
 
-from logics.rules import *
+from ..logics.rules import *
 
 
 def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
@@ -10,7 +10,7 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
                                                    # We do not need features that are not mentioned in conditions and are unchanged in the effects
     for ef in rule.effects.get_atoms():
         match ef:
-            case EBAny(f): features.add(f)  # TODO should be EBEqual
+            case EBEqual(f): features.add(f)
             case NumericalEffect(f): features.add(f)
 
     options = {f: None for f in features}
@@ -38,35 +38,36 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
 
     for c_dict in condition_combinations:
         new_effect = rule.effects
-        new_condition = rule.conditions
-        for v in condition_vars:
-            # TODO double check this
-            # new_condition = new_condition.replace(Var(v), c_dict[v.feature])
-            if len(c_dict) == 0:
-                new_condition = Top()
-            elif len(c_dict) == 1:
-                new_condition = list(c_dict.values())[0]
-            else:
-                new_condition = reduce(And, c_dict.values())
+        if len(c_dict) == 0:
+            new_condition = Top()
+        elif len(c_dict) == 1:
+            new_condition = list(c_dict.values())[0]
+        else:
+            new_condition = reduce(And, c_dict.values())
 
         for e in effect_vars:
             match e:
                 case EPositive(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, True))
                 case ENegative(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, False))
-                case EBAny(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))  # TODO also the situation where f should keep its value
+                case EBEqual(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))
                 case EDecr(f):
-                    if c_dict[f].value == 0 or c_dict[f].value == 1:
+                    if c_dict[f].value == 0:
+                        new_effect = Bottom()
+                    elif c_dict[f].value == 1:
                         new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
                     else:
                         new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
                 case EIncr(f):
-                    if bounds[f] - c_dict[f].value <= 1:
+                    if bounds[f] - c_dict[f].value == 0:
+                        new_effect = Bottom()
+                    elif bounds[f] - c_dict[f].value <= 1:
                         new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f]))
                     else:
                         new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
-                case ENAny(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
+                case ENEqual(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
         # if LTLRule(new_condition, new_effect) not in
-        new_rules.append(LTLRule(new_condition, new_effect))
+        if not new_effect == Bottom():
+            new_rules.append(LTLRule(new_condition, new_effect))
 
     return new_rules
 
@@ -81,6 +82,7 @@ def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleListRepr:
 
 
 def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
+    """
     merged = list[RuleListRepr]()
     for rule in policy.get_rules():
         added = False
@@ -97,14 +99,15 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
             merged += [r_conv]
 
     return merged
-
+    """
+    return [dlplan_rule_to_tuple(r) for r in policy.get_rules()]
 
 def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
     ruletups: list[RuleListRepr] = policy_to_rule_tuples(policy)
-    mergedtups: list[RuleListRepr] = merge_all_rules(ruletups)
+    # mergedtups: list[RuleListRepr] = merge_all_rules(ruletups)
 
     ltl_rules = list[ArrowLTLRule]()
-    for r in mergedtups:
+    for r in ruletups:
         if not r.conditions:
             c_ltl = Top()
         else:
@@ -119,7 +122,7 @@ def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
 def get_condition_features(cs: set[Condition]) -> set[Feature]:
     return {c.feature for c in cs}
 
-
+"""
 def merge_rules(r1: RuleListRepr, r2: RuleListRepr) -> list[RuleListRepr]:
     if r1 == r2:
         return [r1]
@@ -186,4 +189,4 @@ def merge_all_rules(rs: list[RuleListRepr]) -> list[RuleListRepr]:
         if eff:
             nrs.append(RuleListRepr(set(c), eff))
     return nrs
-
+"""
