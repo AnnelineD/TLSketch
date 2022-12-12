@@ -1,6 +1,6 @@
 import unittest
 
-from src.transition_system.dl_transition_model import *
+from src.transition_system.dlplan import *
 
 
 class DLTransitionModelTest(unittest.TestCase):
@@ -38,28 +38,29 @@ class DLTransitionModelTest(unittest.TestCase):
     s2 = dlplan.State(i, [a2, a3, a6, a7, a8])
     s3 = dlplan.State(i, [a3, a4, a7])
     s4 = dlplan.State(i, [a2, a5, a6])
-    states = {s0, s1, s2, s3, s4}
+    states = [s0, s1, s2, s3, s4]
 
-    tm = DLTransitionModel(i, states)
+    tm = DLTransitionModel(i, states, s0, [], DirectedGraph())
 
     f = dlplan.SyntacticElementFactory(v)
-    n_feature = f.parse_numerical("n_count(c_primitive(clear,0))")
+    n_feature: dlplan.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
+    n_feature.set_index(0)
     b_feature = f.parse_boolean("b_empty(c_primitive(holding,0))")
+    b_feature.set_index(0)
 
-    def test_something(self):
-        num_tm = add_feature_propositions(self.tm, self.n_feature)
-        #print(self.tm.states)
-        #print(num_tm.states)
+    def test_add_features(self):
 
-        #print(self.tm.instance_info.get_atoms())
-        #print(num_tm.instance_info.get_atoms())
+        # bool_tm = add_feature_propositions(self.tm, self.b_feature)
+        bool_tm = self.tm.add_features([self.b_feature])
+        self.assertEqual({self.b_feature: {self.tm.states[0]: True, self.tm.states[1]: True, self.tm.states[2]: True, self.tm.states[3]: False, self.tm.states[4]: False}},
+                         bool_tm.features)
 
-        bool_tm = add_feature_propositions(self.tm, self.b_feature)
-        print(self.tm.states)
-        print(bool_tm.states)
+        num_tm = self.tm.add_features([self.n_feature])
+        self.assertEqual({self.n_feature: {self.tm.states[0]: 1, self.tm.states[1]: 1, self.tm.states[2]: 2, self.tm.states[3]: 1, self.tm.states[4]: 1}},
+                         num_tm.features)
 
-        print(self.tm.instance_info.get_atoms())
-        print(bool_tm.instance_info.get_atoms())
+        self.assertEqual({self.n_feature: 2}, num_tm.get_feature_bounds())
+
 
 
 if __name__ == '__main__':
