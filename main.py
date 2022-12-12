@@ -1,51 +1,53 @@
-from src.transition_system.dl_transition_model import *
-from src.transition_system.conversions import *
-from dlplan import PolicyReader
-from src.logics.sketch_to_ltl import *
+from functools import reduce
+
+import dlplan
+import ltl
+
+from examples import *
+from src.logics.rules import LTLSketch
+from src.to_smv.conversion import *
+from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules
 
 
-def pddl_to_dlplan_states(domain_file: str, instance_file: str):
-    reader = PDDLReader(raise_on_error=True)
-    tproblem: TProblem = reader.read_problem(domain_file, instance_file)
-    tsystem = TarskiTransitionSystem(tproblem)
+def show_domain_info():
+    domain = Miconic()
+    print(domain.dl_system().graph.show())
+    print(domain.dl_system().graph.adj)
 
-    i = dlinstance_from_tarski(tproblem.language)
-    dlstates = tmodels_to_dlstates(tsystem.states, i)
-    dlsystem = DLTransitionModel(i, dlstates)
-    return dlsystem
+    sketch = domain.sketch_2()
+    print("sketch", sketch)
+    print()
+    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    arrow_sketch = policy_to_arrowsketch(sketch)
+    print("features: ", f_domain.features.keys())
+    print("arrow sketch:", arrow_sketch.show())
+
+    print("bounds:", f_domain.get_feature_bounds())
+    ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
+    goal_atoms = domain.dl_system().instance_info.get_static_atoms()
+    print("goal atoms", goal_atoms)
+    for i, s in enumerate(domain.dl_system().states):
+        print(i, s)
+    print()
+    print("smv:")
+    print("MODULE main")
+    print(transition_system_to_smv(domain.dl_system()))
+    print(features_to_smv(f_domain))
+    ltl_sketch = LTLSketch(ltl_rules)
+    for r in ltl_sketch.rules:
+        print(r.show())
+
+def main():
+    domain = Gripper()
+    sketch = domain.sketch_1()
+    print("sketch", sketch)
+    arrow_sketch = policy_to_arrowsketch(sketch)
+    print(arrow_sketch.show())
+    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
+    for r in ltl_rules:
+        print(r.show())
 
 
 if __name__ == '__main__':
-    dlsystem = pddl_to_dlplan_states("blocks_4_clear/domain.pddl", "blocks_4_clear/p-3-0.pddl")
-    factory = dlplan.SyntacticElementFactory(dlsystem.instance_info.get_vocabulary_info())
-    n = factory.parse_numerical("n_count(c_primitive(on,0))")
-    H = factory.parse_boolean("b_nullary(arm-empty)")
-    feature_sys = add_features(dlsystem, {n, H})
-
-    # print(feature_sys.states)
-
-    sketch: dlplan.Policy = PolicyReader().read('(:policy'
-                                                '\n(:boolean_features "b_nullary(arm-empty)")'
-                                                '\n(:numerical_features "n_count(c_primitive(on,0))")'
-                                                '\n(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_pos 0) (:e_n_bot 0)))'
-                                                '\n(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))'
-                                                '\n)', factory)
-
-    r: dlplan.Rule = sketch.get_rules()[0]
-    r2 = sketch.get_rules()[1]
-    c: dlplan.BaseCondition = r.get_conditions()[0]
-    #print(c.get_base_feature())
-    #print("here", type(r.get_conditions()))
-    from src.dlplan_utils import show_sketch
-    #print(show_condition(c, "c"))
-
-    print(show_sketch(sketch))
-
-    num_ltl = to_num_ltl(sketch)
-    for r in num_ltl.full_rules:
-        print(r.show())
-
-    # print(policy_to_rule_tuples(sketch))
-
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    show_domain_info()

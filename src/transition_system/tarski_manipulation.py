@@ -1,11 +1,7 @@
 
 import tarski
 from typing import List, Tuple, Dict, Set
-from tarski.syntax.terms import Constant as TConstant
-from tarski.syntax.sorts import Sort as TSort
-from tarski.fstrips.action import Action as TAction
-from tarski.fstrips.problem import Problem as TProblem
-from tarski.model import Model as TModel
+from .types import *
 import tarski.search
 import itertools
 
@@ -38,8 +34,15 @@ def get_ground_actions(schemas: list[TAction], sorted_objects: dict[TSort, list[
 def typed_permutations(types: tuple[TSort], object_per_type: dict[TSort, list[TConstant]]) -> list[tuple[TConstant]]:
     if not types:
         return list(tuple())
-        # TODO delete the on(b1, b1)
-    return list(itertools.product(*map(lambda s: object_per_type[s], types)))
+    perms = list(itertools.product(*map(lambda t: object_per_type[t], types)))
+    filtered_perms = list()  # filter all options where two times the same object is used
+    for i, p in enumerate(perms):
+        names = list(map(lambda x: x.name, p))  # use name representation of tarski Constants because equality is ill defined
+        for n in names:
+            if names.count(n) == 1:
+                filtered_perms.append(p)  # we cannot delete elements from perms, since the equality between tarski Constants is ill defined
+            break
+    return filtered_perms
 
 
 def sort_constants(language: tarski.fol.FirstOrderLanguage) -> dict[TSort, list[TConstant]]:
