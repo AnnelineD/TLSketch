@@ -1,28 +1,25 @@
 import dlplan
 
-from src.transition_system.conversions import tarski_to_dl_system, dlinstance_from_tarski
-from src.transition_system.dl_transition_model import DLTransitionModel
-from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
-from src.transition_system import tarski_transition_model
+import src.transition_system as ts
 
 
 # TODO absolute/relative paths for file reading
 
 class FromFile:
     def __init__(self, domain_file: str, instance_file: str):
-        dproblem, iproblem = get_tarski_domain_and_instance(domain_file, instance_file)
+        dproblem, iproblem = ts.tarski.load_domain_instance(domain_file, instance_file)
         self._dproblem = dproblem
         self._iproblem = iproblem
-        self._instance = dlinstance_from_tarski(dproblem, iproblem)
+        self._instance = ts.conversions.dlinstance_from_tarski(dproblem, iproblem)
 
-    def tarski_system(self) -> tarski_transition_model.TarskiTransitionSystem:
-        return tarski_transition_model.from_instance(self._iproblem)
+    def tarski_system(self) -> ts.tarski.TarskiTransitionSystem:
+        return ts.tarski.from_instance(self._iproblem)
 
     def factory(self) -> dlplan.SyntacticElementFactory:
         return dlplan.SyntacticElementFactory(self._instance.get_vocabulary_info())
 
-    def dl_system(self) -> DLTransitionModel:
-        return tarski_to_dl_system(self.tarski_system(), self._instance)
+    def dl_system(self) -> ts.dlplan.DLTransitionModel:
+        return ts.conversions.tarski_to_dl_system(self.tarski_system(), self._instance)
 
     def read_sketch(self, file) -> dlplan.Policy:
         with open(file, "r") as f:

@@ -1,4 +1,4 @@
-from src.transition_system.dl_transition_model import DLTransitionModel, DLFeatureTransitionModel
+from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
 from src.logics.feature_vars import *

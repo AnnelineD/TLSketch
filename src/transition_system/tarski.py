@@ -1,7 +1,19 @@
 import tarski.search.operations
 from dataclasses import dataclass
-from src.transition_system.tarski_manipulation import *
+from tarski.io import PDDLReader
+
+from .tarski_manipulation import sort_constants, get_ground_actions
+from .types import *
+
 from src.transition_system.graph import DirectedGraph
+
+
+def load_domain_instance(domain_file, instance_file):
+    domain_reader = PDDLReader()
+    instance_reader = PDDLReader()
+    domain_reader.parse_domain(domain_file)
+    instance_reader.read_problem(domain_file, instance_file)
+    return domain_reader.problem, instance_reader.problem
 
 
 @dataclass

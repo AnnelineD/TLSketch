@@ -1,9 +1,10 @@
 import dlplan
 import tarski.fstrips
 
-from src.transition_system.tarski_transition_model import *
-from src.transition_system.tarski_manipulation import sort_constants, typed_permutations
-from src.transition_system.dl_transition_model import DLTransitionModel
+from .tarski import TarskiTransitionSystem
+from .tarski_manipulation import sort_constants, typed_permutations
+from .dlplan import DLTransitionModel
+from .types import *
 
 
 def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str, int]:

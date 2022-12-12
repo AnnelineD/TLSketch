@@ -1,10 +1,10 @@
 import unittest
 
-from src.transition_system.tarski_transition_model import *
+from src.transition_system.tarski import *
 from examples import *
 
 
-class MyTestCase(unittest.TestCase):
+class TarskiSystemTest(unittest.TestCase):
     reader = PDDLReader(raise_on_error=True)
     reader.parse_domain('blocks_4_clear/domain.pddl')
     problem = reader.parse_instance('blocks_4_clear/p-3-0.pddl')

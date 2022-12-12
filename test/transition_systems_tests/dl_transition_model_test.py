@@ -1,6 +1,6 @@
 import unittest
 
-from src.transition_system.dl_transition_model import *
+from src.transition_system.dlplan import *
 
 
 class DLTransitionModelTest(unittest.TestCase):

@@ -1,21 +1,16 @@
 import unittest
 
-import dlplan
-
-from src.transition_system.conversions import *
-from src.transition_system.dl_transition_model import DLTransitionModel
-from src.transition_system.tarski_manipulation import get_tarski_domain_and_instance
-from src.transition_system import tarski_transition_model
+import src.transition_system as ts
 from src.to_smv.conversion import *
 
 
-class MyTestCase(unittest.TestCase):
+class SMVTest(unittest.TestCase):
 
     def print_smv(self, domain_file, instance_file, sketch: str):
-        d, i = get_tarski_domain_and_instance(domain_file, instance_file)
-        tarski_ts = tarski_transition_model.from_instance(i)
-        di = dlinstance_from_tarski(d, i)
-        dl_ts = tarski_to_dl_system(tarski_ts, di)
+        d, i = ts.tarski.load_domain_instance(domain_file, instance_file)
+        tarski_ts = ts.tarski.from_instance(i)
+        di = ts.conversions.dlinstance_from_tarski(d, i)
+        dl_ts = ts.conversions.tarski_to_dl_system(tarski_ts, di)
         factory = dlplan.SyntacticElementFactory(dl_ts.instance_info.get_vocabulary_info())
         sketch: dlplan.Policy = dlplan.PolicyReader().read(sketch, factory)
 
@@ -26,8 +21,8 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_blocks_clear(self):
-        blocks_clear_domain = "../../blocks_4_clear/domain.pddl"
-        blocks_clear_instance = "../../blocks_4_clear/p-3-0.pddl"
+        blocks_clear_domain = "blocks_4_clear/domain.pddl"
+        blocks_clear_instance = "blocks_4_clear/p-3-0.pddl"
         sketch_0 = '(:policy\n'\
                     '(:boolean_features "b_nullary(arm-empty)")\n'\
                     '(:numerical_features "n_count(c_primitive(on,0))")\n'\

@@ -1,6 +1,5 @@
 import dlplan
 from dlplan import State as DLState
-import copy
 from typing import Union
 
 from src.transition_system.graph import DirectedGraph

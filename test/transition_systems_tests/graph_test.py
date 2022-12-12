@@ -2,7 +2,7 @@ import unittest
 from src.transition_system.graph import DirectedGraph
 
 
-class MyTestCase(unittest.TestCase):
+class GraphTest(unittest.TestCase):
     def test_grow(self):
         g = DirectedGraph()
         self.assertEqual(0, g.size())
