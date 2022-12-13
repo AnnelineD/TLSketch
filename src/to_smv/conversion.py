@@ -41,14 +41,26 @@ def ltl_to_smv(ltl: LTLFormula) -> str:
         case Or(p, q): return f"({ltl_to_smv(p)} | {ltl_to_smv(q)})"
         case Next(p): return f"X({ltl_to_smv(p)})"
         case Until(p, q): return f"({ltl_to_smv(p)} U {ltl_to_smv(q)})"
-        case Release(p, q):  return f"({ltl_to_smv(p)} V {ltl_to_smv(q)})"
+        case Release(p, q): return f"({ltl_to_smv(p)} V {ltl_to_smv(q)})"
         case Then(p, q): return f"({ltl_to_smv(p)} -> {ltl_to_smv(q)})"
         case Iff(p, q): return f"({ltl_to_smv(p)} <-> {ltl_to_smv(q)})"
-        case Finally(p): return f"F({ltl_to_smv(p)})"
+        case Finally(p, bound):
+            if not bound: return f"F({ltl_to_smv(p)})"
+            else:
+                s, e = bound
+                return f"F[{s}, {e}]({ltl_to_smv(p)})"
         case Globally(p): return f"G({ltl_to_smv(p)})"
         case Weak(p, q):  # = Release(q, Or(p, q))
             return f"{ltl_to_smv(Release(q, p | q))}"
         case Strong(p, q):  # = Until(q, And(p, q))
             return f"({ltl_to_smv(Until(q, p & q))})"
+        case Previous(p):
+            return f"Y{ltl_to_smv(p)}"
+        case Once(p, bound):
+            if not bound: return f"O{ltl_to_smv(p)}"
+            else:
+                s, e = bound
+                return f"O[{s}, {e}]({ltl_to_smv(p)})"
+
         case _: raise NotImplementedError(ltl)
 
