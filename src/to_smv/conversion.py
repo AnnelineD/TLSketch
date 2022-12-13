@@ -1,3 +1,4 @@
+from src.logics.rules import LTLRule
 from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
@@ -27,6 +28,10 @@ def features_to_smv(ts: DLFeatureTransitionModel):
     return f"DEFINE \n " \
     f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s.get_index()}: {str(ts.features[fn][s]).upper()};' for s in ts.transition_model.states)} {nl + tab}esac;''' for fn in ts.features.keys())}\n"\
     f"{tab}goal := state in {{{', '.join({f's{i}' for i in ts.transition_model.goal_states})}}};"
+
+
+def rules_to_smv(rules: list[LTLRule]) -> str:
+    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)} \n \te{i} := {ltl_to_smv(r.effects)}" for i, r in enumerate(rules)])
 
 
 def ltl_to_smv(ltl: LTLFormula) -> str:

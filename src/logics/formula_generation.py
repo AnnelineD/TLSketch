@@ -21,7 +21,7 @@ class FormulaGenerator:
         bound = (1, self.n_steps) if self.n_steps else None
         return Then(
             Globally(
-                reduce(Or, [e & Previous(Once(c), bound) for c, e in zip(self.conditions, self.effects)])
+                reduce(Or, [e & Previous(Once(c, bound)) for c, e in zip(self.conditions, self.effects)])
                 | reduce(Or, [c & Next(Finally(e, bound)) for c, e in zip(self.conditions, self.effects)])
                 | reduce(Or, [Previous(Once(c, bound)) & Next(Finally(e, bound)) for c, e in zip(self.conditions, self.effects)])
                 | self.goal

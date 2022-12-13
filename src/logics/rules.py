@@ -3,8 +3,8 @@ from functools import reduce
 
 from ltl import *
 
-from logics.conditions_effects import *
-from logics.feature_vars import *
+from ..logics.conditions_effects import *
+from ..logics.feature_vars import *
 
 
 Rule = namedtuple("Rule", "conditions effects")
