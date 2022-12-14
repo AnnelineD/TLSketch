@@ -31,7 +31,7 @@ def features_to_smv(ts: DLFeatureTransitionModel):
 
 
 def rules_to_smv(rules: list[LTLRule]) -> str:
-    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)} \n \te{i} := {ltl_to_smv(r.effects)}" for i, r in enumerate(rules)])
+    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)}; \n \te{i} := {ltl_to_smv(r.effects)};" for i, r in enumerate(rules)])
 
 
 def ltl_to_smv(ltl: LTLFormula) -> str:
@@ -60,9 +60,9 @@ def ltl_to_smv(ltl: LTLFormula) -> str:
         case Strong(p, q):  # = Until(q, And(p, q))
             return f"({ltl_to_smv(Until(q, p & q))})"
         case Previous(p):
-            return f"Y{ltl_to_smv(p)}"
+            return f"Y({ltl_to_smv(p)})"
         case Once(p, bound):
-            if not bound: return f"O{ltl_to_smv(p)}"
+            if not bound: return f"O({ltl_to_smv(p)})"
             else:
                 s, e = bound
                 return f"O[{s}, {e}]({ltl_to_smv(p)})"

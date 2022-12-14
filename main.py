@@ -51,18 +51,20 @@ def main():
 
 def make_smv():
     domain = Gripper()
+    filename = "gripper_1.smv"
     sketch = domain.sketch_1()
     arrow_sketch = policy_to_arrowsketch(sketch)
     f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
     ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
-    print("MODULE main")
-    print(transition_system_to_smv(domain.dl_system()))
-    print(features_to_smv(f_domain))
-    print(rules_to_smv(ltl_rules))
-    g = FormulaGenerator(len(ltl_rules), 5)
-    print("LTLSPEC ", ltl_to_smv(g.one_condition()), ";")
-    print("LTLSPEC ", ltl_to_smv(g.rules_followed_then_goal()), ";")
-    print("LTLSPEC ", ltl_to_smv(g.there_exists_a_path()), ";")
+    g = FormulaGenerator(len(ltl_rules))
+    with open(filename, 'w') as f:
+        f.write("MODULE main\n")
+        f.write(transition_system_to_smv(domain.dl_system()) + '\n')
+        f.write(features_to_smv(f_domain) + '\n')
+        f.write(rules_to_smv(ltl_rules) + '\n')
+        f.write("LTLSPEC " + ltl_to_smv(g.one_condition()) + ";" + '\n')
+        f.write("LTLSPEC " + ltl_to_smv(g.rules_followed_then_goal()) + ";" + '\n')
+        f.write("LTLSPEC " + ltl_to_smv(g.there_exists_a_path()) + ";" + '\n')
 
 
 if __name__ == '__main__':
