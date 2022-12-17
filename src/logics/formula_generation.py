@@ -16,25 +16,25 @@ class FormulaGenerator:
     def one_condition(self) -> LTLFormula:
         return Globally((reduce(Or, self.conditions)) | self.goal | ~ Finally(self.goal))
 
-    # G((( ∨i (ei ∧ Oci)) ∧ ( ∨i (ci ∧ F ei))) ∨ (∨i(O(ci) ∧ F ei))) → F (goal)
-    def rules_followed_then_goal(self) -> LTLFormula:
+    def follow_rules(self) -> LTLFormula:
         bound = (1, self.n_steps) if self.n_steps else None
-        return Then(
-            Globally(
-                reduce(Or, [e & Previous(Once(c, bound)) for c, e in zip(self.conditions, self.effects)])
-                | reduce(Or, [c & Next(Finally(e, bound)) for c, e in zip(self.conditions, self.effects)])
-                | reduce(Or, [Previous(Once(c, bound)) & Next(Finally(e, bound)) for c, e in zip(self.conditions, self.effects)])
-                | self.goal
-            ), Finally(self.goal)
+        small_bound = (1, self.n_steps//2 + 1) if bound else None
+        ces = list(zip(self.conditions, self.effects))
+        return Globally(
+            (reduce(Or, [e & (Once(c, bound)) for c, e in ces])
+             & reduce(Or, [c & (Finally(e, bound)) for c, e in ces]))
+            | reduce(Or, [(Once(c, small_bound)) & (Finally(e & ((reduce(Or, [cj & Finally(ej, bound) for cj, ej in ces]) | self.goal)), small_bound)) for c, e in ces])
+            | self.goal
         )
 
+    # G((( ∨i (ei ∧ Oci)) ∧ ( ∨i (ci ∧ F ei))) ∨ (∨i(O(ci) ∧ F ei))) → F (goal)
+    def rules_followed_then_goal(self) -> LTLFormula:
+
+        return Next(Then(
+            self.follow_rules(), Finally(self.goal)
+        ))
+
     def there_exists_a_path(self) -> LTLFormula:    # should be false
-        bound = (1, self.n_steps) if self.n_steps else None
-        return Not(
-            Globally(
-                reduce(Or, [e & Previous(Once(c, bound)) for c, e in zip(self.conditions, self.effects)])
-                | reduce(Or, [c & Next(Finally(e, bound)) for c, e in zip(self.conditions, self.effects)])
-                | reduce(Or, [Previous(Once(c)) & Next(Finally(e)) for c, e in zip(self.conditions, self.effects)])
-                | self.goal
-            )
-        )
+        return Next(Not(
+            self.follow_rules()
+        ))

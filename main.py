@@ -50,9 +50,13 @@ def main():
         print(r.show())
 
 def make_smv():
-    domain = Gripper()
-    filename = "gripper_1.smv"
-    sketch = domain.sketch_1()
+    domain = BlocksOn()
+    filename = "blocks_on_2.smv"
+    print(domain.dl_system().graph.show())
+    print(domain.dl_system().states)
+    print(domain.dl_system().goal_states)
+    print(domain.dl_system().instance_info.get_static_atoms())
+    sketch = domain.sketch_2()
     arrow_sketch = policy_to_arrowsketch(sketch)
     f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
     ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
@@ -65,6 +69,12 @@ def make_smv():
         f.write("LTLSPEC " + ltl_to_smv(g.one_condition()) + ";" + '\n')
         f.write("LTLSPEC " + ltl_to_smv(g.rules_followed_then_goal()) + ";" + '\n')
         f.write("LTLSPEC " + ltl_to_smv(g.there_exists_a_path()) + ";" + '\n')
+
+def print_ltl():
+    g = FormulaGenerator(4, 2)
+    print("LTLSPEC " + ltl_to_smv(g.one_condition()))
+    print("LTLSPEC " + ltl_to_smv(g.rules_followed_then_goal()))
+    print("LTLSPEC " + ltl_to_smv(g.there_exists_a_path()))
 
 
 if __name__ == '__main__':
