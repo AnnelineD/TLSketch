@@ -23,6 +23,8 @@ class Condition:
             case CNegative(bf): return f"¬b{r}"
             case CZero(nf): return f"n{r}=0"
             case CGreater(nf): return f"n{r}>0"
+            case CBAny(_): return ""
+            case CNAny(_): return ""
             case _: return "invalid"  # TODO raise error
 
 
@@ -94,12 +96,22 @@ class CNegative(BooleanCondition):
 
 
 @dataclass(frozen=True, eq=True)
+class CBAny(BooleanCondition):
+    pass
+
+
+@dataclass(frozen=True, eq=True)
 class CGreater(NumericalCondition):
     pass
 
 
 @dataclass(frozen=True, eq=True)
 class CZero(NumericalCondition):
+    pass
+
+
+@dataclass(frozen=True, eq=True)
+class CNAny(NumericalCondition):
     pass
 
 
