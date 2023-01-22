@@ -4,8 +4,10 @@ import examples
 import src.transition_system as ts
 from src.logics.rules import Feature
 from src.logics.conditions_effects import *
+from src.logics.rules import RuleListRepr
 import itertools
 from typing import Generator, TypeVar, Callable
+from collections.abc import Iterator
 
 """
 class SketchRule:
@@ -76,7 +78,7 @@ def possible_conditions(boolean_features: list[dlplan.Boolean], numerical_featur
                 + list(map(lambda i, f: convert_bool_condition(i, f), cs[len(numerical_features):], boolean_features))
 
 
-def possible_effects(condition: list[Condition]) -> Generator[list[Effect], None, None]:
+def possible_effects(condition: list[Condition]) -> Iterator[list[Effect]]:
     def match_c(c):
         match c:
             case CZero(x): return [ENAny(x), EIncr(x), ENEqual(x)]
@@ -86,29 +88,74 @@ def possible_effects(condition: list[Condition]) -> Generator[list[Effect], None
             case CPositive(x): return [EBAny(x), ENegative(x), EBEqual(x)]
             case CBAny(x): return [EBAny(x), EPositive(x), ENegative(x), EBEqual(x)]
 
-    yield from itertools.product(*[match_c(c) for c in condition])
+    yield from filter(lambda es: not all([(isinstance(ef, ENAny) | isinstance(ef, EBAny)) for ef in es]), itertools.product(*[match_c(c) for c in condition]))
+
 
 A = TypeVar('A')
 B = TypeVar('B')
-from collections.abc import Iterator
+
 def dependent_product(it1: Iterator[A], f_it2: Callable[[A], Iterator[B]]) -> Iterator[tuple[A, B]]:
     for a in it1:
         for b in f_it2(a):
             yield (a, b)
 
-from itertools import islice
 
-def all_combinations(it, n):
+C = TypeVar('C')
+
+
+def all_combinations(it: Iterator[C], n: int) -> Iterator[tuple[C, ...]]:
+    """
+
+    :param it:
+    :param n:
+    :return: tuples of length <= n
+    """
     for i, itn in enumerate(itertools.tee(it, n)):
         yield from itertools.combinations(itn, i+1)
 
-def generate_sketches(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], max_rules=4):
-    cs = possible_conditions(boolean_features, numerical_features)
-    rs = dependent_product(cs, possible_effects)
+
+def generate_sketches(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], max_rules=4) -> Iterator[tuple[tuple[list[Condition], list[Effect]], ...]]:
+    cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
+    rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
     return all_combinations(rs, max_rules)
 
 
 
+
+"""
+def to_policy(sketch: tuple[list[Condition], list[Effect]]) -> dlplan.Policy:
+    cs, es = sketch
+    builder = dlplan.PolicyBuilder()
+    for c in cs:
+        match c:
+            case BooleanCondition(x): 
+                b = builder.add_boolean_feature(c.feature)
+                match c:
+                    case CPositive(y): builder.add_pos_condition(b)
+                    case CNegative(y): builder.add_neg_condition(b)
+                    case CBAny(y): pass
+            case NumericalCondition(x): 
+                n = builder.add_numerical_feature(c.feature)
+                match n:
+                    case CZero(y): builder.add_eq_condition(n)
+                    case CGreater(y): builder.add_gt_condition(n)
+                    case CNAny(y): pass
+                
+    for e in es:
+        match e:
+    b = builder.add_boolean_feature(boolean)
+    n = builder.add_numerical_feature(numerical)
+
+    b_neg_condition_0 = builder.add_neg_condition(b)
+    b_bot_effect_0 = builder.add_bot_effect(b)
+    n_gt_condition_0 = builder.add_gt_condition(n)
+    n_dec_effect_0 = builder.add_dec_effect(n)
+    r = builder.add_rule(
+        [b_neg_condition_0, n_gt_condition_0],
+        [b_bot_effect_0, n_dec_effect_0]
+    )
+    policy = builder.get_result()
+"""
 """
 def generate_possible_rules(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical]) -> list[SketchRule]:
     n_features: int = len(boolean_features) + len(numerical_features)

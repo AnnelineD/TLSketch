@@ -45,7 +45,7 @@ class SketchGeneration(unittest.TestCase):
 
     def test_effect_generation(self):
 
-        pes = [(ENAny('n1'), EBAny('b1')),
+        pes: list[tuple[Effect, Effect]] = [(ENAny('n1'), EBAny('b1')),
                (ENAny('n1'), EPositive('b1')),
                (ENAny('n1'), ENegative('b1')),
                (ENAny('n1'), EBEqual('b1')),

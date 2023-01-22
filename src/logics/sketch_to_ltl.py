@@ -6,6 +6,7 @@ from ..logics.rules import *
 
 def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
     # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
+    # TODO what to do with rules without effects
     features: set[Feature] = rule.get_condition_features()   # Get only the features that are present in conditions or effects
                                                    # We do not need features that are not mentioned in conditions and are unchanged in the effects
     for ef in rule.effects.get_atoms():
@@ -22,6 +23,8 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
             case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
             case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
             case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
+            case CNAny(f): pass
+            case CBAny(f): pass
 
     # If a feature is not mentioned in the conditions, but it is in the effect we should also know its value
     for f in options:
@@ -65,6 +68,8 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
                     else:
                         new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
                 case ENEqual(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
+                case EBAny(f): raise NotImplementedError
+                case ENAny(f): raise NotImplementedError
         # if LTLRule(new_condition, new_effect) not in
         if not new_effect == Bottom():
             new_rules.append(LTLRule(new_condition, new_effect))
@@ -102,22 +107,33 @@ def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
     """
     return [dlplan_rule_to_tuple(r) for r in policy.get_rules()]
 
+
 def policy_to_arrowsketch(policy: dlplan.Policy) -> ArrowLTLSketch:
     ruletups: list[RuleListRepr] = policy_to_rule_tuples(policy)
     # mergedtups: list[RuleListRepr] = merge_all_rules(ruletups)
+    return ruletups_to_arrowsketch(ruletups)
 
+
+def ruletups_to_arrowsketch(ruletups: list[RuleListRepr]) -> ArrowLTLSketch:
     ltl_rules = list[ArrowLTLRule]()
     for r in ruletups:
         if not r.conditions:
             c_ltl = Top()
         else:
             c_ltl: LTLFormula = reduce(And, map(Var, r.conditions))  # TODO make special kind of var
-        e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), r.effects))
+        es = list(filter(lambda x: not not x, r.effects))
+        if not es:
+            e_ltl = Bottom()
+        else:
+            e_ltl: LTLFormula = reduce(Or, map(lambda le: reduce(And, map(Var, le)), es))
 
         ltl_rules.append(ArrowLTLRule(c_ltl, e_ltl))
 
     return ArrowLTLSketch(ltl_rules)
 
+
+def list_to_ruletups(l: tuple[tuple[list[Condition], list[Effect]], ...]) -> list[RuleListRepr]:
+    return [RuleListRepr([c for c in cs if not (isinstance(c, CBAny) | isinstance(c, CNAny))], [[e for e in es if not (isinstance(e, EBAny) or isinstance(e, ENAny))]]) for cs, es in l]
 
 def get_condition_features(cs: set[Condition]) -> set[Feature]:
     return {c.feature for c in cs}
