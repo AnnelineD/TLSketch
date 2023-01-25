@@ -4,6 +4,7 @@ from src.dlplan_utils import repr_feature
 from ltl import *
 from src.logics.feature_vars import *
 from src.transition_system.graph import DirectedGraph
+import ctl
 
 
 def graph_to_smv(graph: DirectedGraph, init_index):
@@ -69,3 +70,25 @@ def ltl_to_smv(ltl: LTLFormula) -> str:
 
         case _: raise NotImplementedError(ltl)
 
+
+def ctl_to_smv(f: ctl.CTLFormula) -> str:
+    match f:
+        case ctl.Top(): return "TRUE"
+        case ctl.Bottom(): return "FALSE"
+        case ctl.Var(s) as x: return f"{s}"  # TODO make a special goal var
+        case ctl.Not(p): return f"!{ctl_to_smv(p)}"
+        case ctl.And(p, q): return f"({ctl_to_smv(p)} & {ctl_to_smv(q)})"
+        case ctl.Or(p, q): return f"({ctl_to_smv(p)} | {ctl_to_smv(q)})"
+        case ctl.EX(p): return f"EX({ctl_to_smv(p)})"
+        case ctl.AX(p): return f"AX({ctl_to_smv(p)})"
+        case ctl.Then(p, q): return f"({ctl_to_smv(p)} -> {ctl_to_smv(q)})"
+        case ctl.Iff(p, q): return f"({ctl_to_smv(p)} <-> {ctl_to_smv(q)})"
+        case ctl.EF(p, bound):
+            if not bound: return f"EF({ctl_to_smv(p)})"
+            else: NotImplementedError(f)
+        case ctl.AF(p, bound):
+            if not bound: return f"AF({ctl_to_smv(p)})"
+            else: NotImplementedError(f)
+        case ctl.EG(p): return f"EG({ctl_to_smv(p)})"
+        case ctl.AG(p): return f"AG({ctl_to_smv(p)})"
+        case _: raise NotImplementedError(f)
