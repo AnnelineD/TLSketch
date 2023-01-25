@@ -53,8 +53,10 @@ def generate_features(vocab: dlplan.VocabularyInfo, states: list[dlplan.State]) 
     return boolean_features, numerical_features
 
 
-def get_feature_sets(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], size = 3) -> list[(list[dlplan.Boolean], list[dlplan.Numerical])]:
-    pass
+def get_feature_sets(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], size=3) -> Iterator[(tuple[dlplan.Boolean, ...], tuple[dlplan.Numerical, ...])]:
+    for i in range(0, size + 1):
+        j = size - i
+        yield from itertools.product(itertools.combinations(boolean_features, i), itertools.combinations(numerical_features, j))
 
 
 def possible_conditions(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical]) -> Generator[list[Condition], None, None]:
@@ -201,13 +203,4 @@ def generate_possible_rules(boolean_features: list[dlplan.Boolean], numerical_fe
 
         yield SketchRule(boolean_features + numerical_features, conditions, effects)
 """
-
-if __name__ == '__main__':
-    domain = examples.Gripper()
-    # bools, nums = generate_features(domain.dl_system().instance_info.get_vocabulary_info(), domain.dl_system().states)
-    bools = domain.sketch_1().get_boolean_features()
-    nums = domain.sketch_1().get_numerical_features()
-    print(len(bools) + len(nums))
-    for e, r in enumerate(generate_possible_rules(bools, nums)):
-        print(e, r.conditions, r.effects)
 
