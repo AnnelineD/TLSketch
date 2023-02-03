@@ -1,5 +1,6 @@
 from typing import Iterator
 
+import ltl
 import pynusmv
 
 from src.logics.formula_generation import FormulaGenerator
@@ -28,9 +29,19 @@ def check_file(filepath: str) -> bool:
     fsm = pynusmv.glob.prop_database().master.bddFsm
     ltls = [pynusmv.glob.prop_database()[i] for i in [2, 3, 4]]
     ctls = [pynusmv.glob.prop_database()[i] for i in [0, 1]]
-    evals = [pynusmv.mc.check_ltl_spec(p.expr) for p in ltls]
-    ctl_evals = [pynusmv.mc.check_ctl_spec(fsm, p.expr) for p in ctls]
+    # evals = [pynusmv.mc.check_ltl_spec(p.expr) for p in ltls]
+    # ctl_evals = [pynusmv.mc.check_ctl_spec(fsm, p.expr) for p in ctls]
+    checked = False
+    if not pynusmv.mc.check_ctl_spec(fsm, ctls[0].expr):
+        if pynusmv.mc.check_ctl_spec(fsm, ctls[1].expr):
+            if pynusmv.mc.check_ltl_spec(ltls[0].expr):
+                if not pynusmv.mc.check_ltl_spec(ltls[2].expr):
+                    if pynusmv.mc.check_ltl_spec(ltls[1].expr):
+                        checked = True
     pynusmv.init.deinit_nusmv()
-    if evals == [True, True, False] and ctl_evals == [False, True]:
-        return True
+    return checked
+    # if evals == [True, True, False] and ctl_evals == [False, True]:
+    #     return True
+
+    """   """
 
