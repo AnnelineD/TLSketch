@@ -116,11 +116,20 @@ def all_combinations(it: Iterator[C], n: int) -> Iterator[tuple[C, ...]]:
         yield from itertools.combinations(itn, i+1)
 
 
+def generate_rules(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical]) -> Iterator[tuple[list[Condition], list[Effect]]]:
+    cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
+    rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
+    return rs
+
+
 def generate_sketches(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], max_rules=4) -> Iterator[tuple[tuple[list[Condition], list[Effect]], ...]]:
     cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
     rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
     return all_combinations(rs, max_rules)
 
+
+def generate_sketches_from_rules(rs: Iterator[tuple[list[Condition], list[Effect]]], max_rules=4) -> Iterator[tuple[tuple[list[Condition], list[Effect]], ...]]:
+    return all_combinations(rs, max_rules)
 
 
 
