@@ -11,15 +11,19 @@ class FromFile:
         self._dproblem = dproblem
         self._iproblem = iproblem
         self._instance = ts.conversions.dlinstance_from_tarski(dproblem, iproblem)
+        self.tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(self._iproblem)
+        self.dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(self.tarski_system, self._instance)
 
+    """
     def tarski_system(self) -> ts.tarski.TarskiTransitionSystem:
         return ts.tarski.from_instance(self._iproblem)
-
+    """
     def factory(self) -> dlplan.SyntacticElementFactory:
         return dlplan.SyntacticElementFactory(self._instance.get_vocabulary_info())
-
+    """
     def dl_system(self) -> ts.dlplan.DLTransitionModel:
         return ts.conversions.tarski_to_dl_system(self.tarski_system(), self._instance)
+    """
 
     def read_sketch(self, file) -> dlplan.Policy:
         with open(file, "r") as f:
