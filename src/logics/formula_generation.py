@@ -35,14 +35,14 @@ class FormulaGenerator:
     # G((( ∨i (ei ∧ Oci)) ∧ ( ∨i (ci ∧ F ei))) ∨ (∨i(O(ci) ∧ F ei))) → F (goal)
     def rules_followed_then_goal(self) -> LTLFormula:
 
-        return Next(Then(
+        return Then(
             self.follow_rules(), Finally(self.goal)
-        ))
+        )
 
     def there_exists_a_path(self) -> LTLFormula:    # should be false
-        return Next(Not(
+        return Not(
             self.follow_rules()
-        ))
+        )
 
     def ctl_rule_cannot_lead_into_dead(self) -> ctl.CTLFormula:     # should be false
         ces = list(zip(self.conditions, self.effects))
