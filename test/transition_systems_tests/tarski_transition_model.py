@@ -24,9 +24,9 @@ class TarskiSystemTest(unittest.TestCase):
     def test_gripper(self):
 
         domain = Gripper()
-        print(domain.tarski_system().graph.adj)
-        for i, (n, nbs) in enumerate(domain.tarski_system().graph.adj):  # test no self loops
-            if i not in domain.tarski_system().goal_states:
+        print(domain.tarski_system.graph.adj)
+        for i, (n, nbs) in enumerate(domain.tarski_system.graph.adj):  # test no self loops
+            if i not in domain.tarski_system.goal_states:
                 self.assertFalse(i in n)
 
 
