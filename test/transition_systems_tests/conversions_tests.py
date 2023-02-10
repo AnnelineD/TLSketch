@@ -79,7 +79,7 @@ class ConversionTest(unittest.TestCase):
     def test_system_conv(self):
         t_system = ts.tarski.from_instance(self.i_problem)
         dl_system = ts.conversions.tarski_to_dl_system(t_system, self.i)
-        self.assertEqual(0, dl_system.initial_state.get_index())
+        self.assertEqual(0, dl_system.initial_state)
         # print(t_system.states)
         # print(dl_system.states)
 

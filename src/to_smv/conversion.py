@@ -20,7 +20,7 @@ def graph_to_smv(graph: DirectedGraph, init_index):
 
 
 def transition_system_to_smv(transition_system: DLTransitionModel):
-    return graph_to_smv(transition_system.graph, transition_system.initial_state.get_index())
+    return graph_to_smv(transition_system.graph, transition_system.initial_state)
 
 
 def features_to_smv(ts: DLFeatureTransitionModel):
