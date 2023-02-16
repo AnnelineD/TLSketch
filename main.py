@@ -1,11 +1,16 @@
+import os
 from functools import reduce
 from typing import Iterator
+import json
 
 import dlplan
 import ltl
 from math import comb
 import pynusmv
+import tarski.fstrips
 from tqdm import tqdm
+
+import src.transition_system.tarski
 from examples import *
 from src.logics.conditions_effects import Condition, Effect
 from src.logics.rules import LTLSketch
@@ -21,27 +26,29 @@ from src.model_check.model_check import check_file, model_check_sketch
 
 def show_domain_info():
     domain = Miconic()
-    print(domain.dl_system().graph.show())
-    print(domain.dl_system().graph.adj)
+    print(domain.dl_system.graph.show())
+    print(domain.dl_system.graph.adj)
+
+    print(domain)
 
     sketch = domain.sketch_2()
     print("sketch", sketch)
     print()
-    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    f_domain = domain.dl_system.add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
     arrow_sketch = policy_to_arrowsketch(sketch)
     print("features: ", f_domain.features.keys())
     print("arrow sketch:", arrow_sketch.show())
 
     print("bounds:", f_domain.get_feature_bounds())
     ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
-    goal_atoms = domain.dl_system().instance_info.get_static_atoms()
+    goal_atoms = domain.dl_system.instance_info.get_static_atoms()
     print("goal atoms", goal_atoms)
-    for i, s in enumerate(domain.dl_system().states):
+    for i, s in enumerate(domain.dl_system.states):
         print(i, s)
     print()
     print("smv:")
     print("MODULE main")
-    print(transition_system_to_smv(domain.dl_system()))
+    print(transition_system_to_smv(domain.dl_system))
     print(features_to_smv(f_domain))
     ltl_sketch = LTLSketch(ltl_rules)
     for r in ltl_sketch.rules:
@@ -53,7 +60,7 @@ def main():
     print("sketch", sketch)
     arrow_sketch = policy_to_arrowsketch(sketch)
     print(arrow_sketch.show())
-    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
+    f_domain = domain.dl_system.add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
     ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
     for r in ltl_rules:
         print(r.show())
@@ -182,9 +189,9 @@ def model_check_sketches_():
 
 
 def model_check_sketches_bis():
-    domain = Childsnack()
+    domain = Gripper()
     directory = "smvs/"
-    filename = "childsnack_2.smv"
+    filename = "gripper.smv"
     generator = construct_feature_generator()
 
     # (syntactic_element_factory, config.complexity, config.time_limit, config.feature_limit, config.num_threads_feature_generator, dlplan_states)  # generate features with all states of instances
@@ -243,8 +250,108 @@ def model_check_sketches_bis():
             # print(i)
 
 
+class Data:
+    def __init__(self):
+        # self._domain_file = "domain.pddl??"
+        # self.domain = get_domain_problem(self.domain_file)
+        # self._instance_files = ["instance.pddl??", ""]
+        self.transition_systems = ["instance_system", "..."]
+        self.features = "features???"
+
+
+def make_data_files(directory: str):
+    """
+
+    :param directory: We assume that the directory has one domain file called "domain.pddl", and all the remaining files are instance files
+    :return:
+    """
+    domain_path: str = directory + "/domain.pddl"
+    domain = src.transition_system.tarski.load_domain(domain_path)
+    instance_files: list[str] = sorted(os.listdir(directory))
+    instance_files.remove("domain.pddl")
+    print(instance_files)
+
+    states_per_instance: dict[str, list[dlplan.State]] = {}
+
+    for i_file in tqdm(instance_files):
+        iproblem = ts.tarski.load_instance(domain_path, directory + '/' + i_file)
+        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
+        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
+
+        with open("transition_systems/" + directory + '/' + i_file.removesuffix(".pddl") + ".json", "w") as trans_file:
+            json.dump({"init": dl_system.initial_state, "goal": dl_system.goal_states, "graph": dl_system.graph.adj}, trans_file)
+
+        with open("data/state_files/" + directory + '/' + i_file.removesuffix(".pddl") + ".json", "w") as state_file:
+            # json.dump([[(instance.get_atom(atom_idx).get_predicate().get_name(), [object.get_name() for object in instance.get_atom(atom_idx).get_objects()]) for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
+            json.dump([[instance.get_atom(atom_idx).get_name() for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
+
+        states_per_instance[i_file.removesuffix(".pddl")] = dl_system.states
+
+    #vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
+    vocab: dlplan.VocabularyInfo = list(states_per_instance.values())[0][0].get_instance_info().get_vocabulary_info()
+    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
+
+    generator = construct_feature_generator()
+    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, [s for sts in states_per_instance.values() for s in sts])
+    numerical_features: list[dlplan.Numerical] = [factory.parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
+    boolean_features = [factory.parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
+
+    for file, sts in states_per_instance.items():
+        with open("feature_valuations/" + file + ".json", "w") as feature_file:
+            for f in numerical_features:
+                for s in sts:
+                    f.evaluate(s)
+            json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
+
+
+
+def read_states(instance: dlplan.InstanceInfo, state_file: str) -> list[dlplan.State]:
+    with open(state_file, "r") as sf:
+        data = json.load(sf)
+    return [dlplan.State(instance, [instance.get_atom(instance.get_atom_idx(str(a))) for a in state]) for state in data]
+
+
+def test_read_states():
+    domain_path: str = "gripper/domain.pddl"
+    domain = src.transition_system.tarski.load_domain(domain_path)
+    instance_path: str = "gripper_test/p-1-0.pddl"
+
+    iproblem = ts.tarski.load_instance(domain_path, instance_path)
+    instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+
+    states = read_states(instance, "data/state_files/gripper_test/p-1-0.json")
+    for i, state in enumerate(states):
+        print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
+
+
+
+
+
+
+
+
+"""
+def read_data() -> Data:
+    pass
+
+
+def model_check_from_files():
+    domain = ???
+    boolean_features = domain.get_boolean_features()
+    numerical_features = ???
+    feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
+    for bs, ns in tqdm(feature_sets):
+        rules = generate_rules(bs, ns)
+        filtered_rules = filter(lambda r: all([model_check.rule(i, r, directory + "miconic_2_r.smv") for i in domain.instances]), rules)
+        sketch_pool = generate_sketches_from_rules(filtered_rules, 1)
+
+        for s in sketch_pool:
+            if all(model_check.sketch(i, s, directory) for i in domain.instances):
+                yield s
+"""
+
+
 if __name__ == '__main__':
-    sketches = model_check_sketches_bis()
-    sl = list(sketches)
-    for s in sl:
-        print(s.show())
+    #make_data_files("gripper_test")
+    test_read_states()

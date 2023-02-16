@@ -8,6 +8,18 @@ from .types import *
 from src.transition_system.graph import DirectedGraph
 
 
+def load_domain(domain_file: str):
+    domain_reader = PDDLReader()
+    domain_reader.parse_domain(domain_file)
+    return domain_reader.problem
+
+
+def load_instance(domain_file, instance_file):
+    instance_reader = PDDLReader()
+    instance_reader.read_problem(domain_file, instance_file)
+    return instance_reader.problem
+
+
 def load_domain_instance(domain_file, instance_file):
     domain_reader = PDDLReader()
     instance_reader = PDDLReader()
@@ -80,7 +92,7 @@ def construct_graph(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
                 else:
                     idx_ns = graph.grow()
                     states.append(ns)
-                graph.add(idx_s, idx_ns, a)
+                graph.add(idx_s, idx_ns, a.name)
                 if ns not in checked:
                     todo.append(ns)
 
