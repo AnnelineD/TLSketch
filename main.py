@@ -250,13 +250,21 @@ def model_check_sketches_bis():
             # print(i)
 
 
-class Data:
-    def __init__(self):
-        # self._domain_file = "domain.pddl??"
-        # self.domain = get_domain_problem(self.domain_file)
-        # self._instance_files = ["instance.pddl??", ""]
-        self.transition_systems = ["instance_system", "..."]
-        self.features = "features???"
+
+
+def write_all_transition_systems(directory: str):
+    domain_path: str = directory + "/domain.pddl"
+    domain = src.transition_system.tarski.load_domain(domain_path)
+    instance_files: list[str] = sorted(os.listdir(directory))
+    instance_files.remove("domain.pddl")
+
+    for i_file in tqdm(instance_files):
+        iproblem = ts.tarski.load_instance(domain_path, directory + '/' + i_file)
+        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
+        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
+
+        write_transition_system_and_states(dl_system, f"data/{directory}/transition_systems/{i_file.removesuffix('.pddl')}.json",f"data/{directory}/states/{i_file.removesuffix('.pddl')}.json")
 
 
 def make_data_files(directory: str):
@@ -299,11 +307,52 @@ def make_data_files(directory: str):
 
     for file, sts in states_per_instance.items():
         with open("feature_valuations/" + file + ".json", "w") as feature_file:
-            for f in numerical_features:
-                for s in sts:
-                    f.evaluate(s)
             json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
 
+
+def write_all_instances(directory: str, instance_files: list[str], domain_file: str, ts_dir, states_dir):
+    domain = ts.tarski.load_domain(directory + '/' + domain_file)
+    for i_file in tqdm(instance_files):
+        iproblem = ts.tarski.load_instance(directory + '/' + domain_file, directory + '/' + i_file)
+        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
+        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
+
+        write_transition_system_and_states(dl_system, ts_dir + '/' + i_file.removesuffix(".pddl") + ".json", states_dir + '/' + i_file.removesuffix(".pddl") + ".json")
+
+
+
+
+def write_transition_system_and_states(dl_system: DLTransitionModel, system_path: str, states_path: str):
+    with open(system_path, "w") as trans_file:
+        json.dump({"init": dl_system.initial_state, "goal": dl_system.goal_states, "graph": dl_system.graph.adj}, trans_file)
+    with open(states_path, "w") as state_file:
+        json.dump([[dl_system.instance_info.get_atom(atom_idx).get_name() for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
+
+
+
+def make_feature_file(states: list[dlplan.State], file_path: str, factory: dlplan.SyntacticElementFactory):
+    generator = construct_feature_generator()
+    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, states)
+    with open(file_path, 'w') as fp:
+        json.dump(feature_reprs, fp)
+    return feature_reprs
+
+
+def parse_features(feature_reprs: list[str], factory: dlplan.SyntacticElementFactory) -> tuple[list[dlplan.Boolean], list[dlplan.Numerical]]:
+    boolean_features: list[dlplan.Boolean] = [factory.parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
+    numerical_features: list[dlplan.Numerical] = [factory.parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
+    return boolean_features, numerical_features
+
+
+def write_feature_valuations(states: list[dlplan.State], features: list[any], file_path: str):
+    with open(file_path, "w") as feature_file:
+        json.dump({f.compute_repr(): [f.evaluate(s) for s in states] for f in features}, feature_file)
+
+
+def read_feature_reprs(file_path) -> list[str]:
+    with open(file_path) as fp:
+        return json.load(fp)
 
 
 def read_states(instance: dlplan.InstanceInfo, state_file: str) -> list[dlplan.State]:
@@ -325,33 +374,224 @@ def test_read_states():
         print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
 
 
+def read_trans_sys(file_path) -> (int, int, DirectedGraph):
+    with open(file_path, "r") as f:
+        data = json.load(f)
+        init = data["init"]
+        goal = data["goal"]
+        adj = data["graph"]
+    return init, goal, DirectedGraph(adj)
+
+def read_valuations(file_path) -> dict[str, list[Union[bool, int]]]:
+    with open(file_path, "r") as f:
+        data = json.load(f)
+    return data
 
 
+class Instance:
+    def __init__(self, transitions_sys: DirectedGraph, init: int, goal_states: list[int], valuations: dict[str, list[Union[bool, int]]]):
+        assert(init <= transitions_sys.size())
+        assert(all([g <= transitions_sys.size() for g in goal_states]))
+        assert(all([len(valuations[k]) == transitions_sys.size() for k in valuations.keys()]))
+        self.system = transitions_sys
+        self.init = init
+        self.goal_states = goal_states
+        self.valuations = valuations
 
 
+def read_instance(transition_path, valuation_path) -> Instance:
+        init, goal, graph = read_trans_sys(transition_path)
+        valuations = read_valuations(valuation_path)
+        return Instance(graph, init, goal, valuations)
 
 
-"""
-def read_data() -> Data:
-    pass
+def graph_to_smv(graph: DirectedGraph, init_index):
+    assert init_index < graph.size()
+    nl = '\n'   # f-strings cannot include backslashes
+    return f"VAR \n" \
+           f"  state: {{{', '.join([f's{i}' for i in range(graph.size())])}}};\n" \
+           f"ASSIGN \n" \
+           f"  init(state) := s{init_index}; \n" \
+           f"  next(state) := case \n" \
+           f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in graph.nbs(i)) }}};''' for i in range(graph.size()))}\n" \
+           f"                 esac;"
+
+def features_to_smv(features: list[Union[dlplan.Boolean, dlplan.Numerical]], instance: Instance):
+    tab = '\t'
+    nl = '\n'
+    return f"DEFINE \n " \
+           f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s_idx}: {str(val).upper()};' for s_idx, val in enumerate(instance.valuations[fn.compute_repr()]))} {nl + tab}esac;''' for fn in features)}\n" \
+           f"{tab}goal := state in {{{', '.join({f's{i}' for i in instance.goal_states})}}};"
+
+def make_instance_smv(i: Instance, features):
+    return "MODULE main\n" \
+           + graph_to_smv(i.system, i.init) + '\n' \
+           + features_to_smv(features, i) + '\n'
+
+def get_instance_names(directory):
+    instance_files: list[str] = sorted(os.listdir(directory))
+    instance_files.remove("domain.pddl")
+    return [fn.removesuffix(".pddl") for fn in instance_files]
 
 
-def model_check_from_files():
-    domain = ???
-    boolean_features = domain.get_boolean_features()
-    numerical_features = ???
+def make_instance_smvs(directory, features):
+    instances = get_instance_names(directory)
+    for instance_name in instances:
+        i = read_instance(f"data/{directory}/transition_systems/{instance_name}.json", f"data/{directory}/feature_valuations/{instance_name}.json")
+        smv_format = make_instance_smv(i, features)
+        with open(f"data/{directory}/smvs/{instance_name}.smv", "w") as f:
+            f.write(smv_format)
+
+
+def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
+    from pynusmv import prop
+    match f:
+        case Top(): return prop.true()
+        case Bottom(): return prop.false()
+        case BooleanVar(f, v): return prop.atom(f"{repr_feature(f)}={str(v).upper()}")
+        case NumericalVar(f, v): return prop.atom(f"{repr_feature(f)}={str(v).upper()}")
+        case Var(s) as x: return prop.atom(f"{s}")  # TODO make a special goal var
+        case Not(p): return prop.not_(ltl_to_input(p))
+        case And(p, q): return ltl_to_input(p) & ltl_to_input(q)
+        case Or(p, q): return ltl_to_input(p) | ltl_to_input(q)
+        case Next(p): return prop.x(ltl_to_input(p))
+        case Until(p, q): return prop.u(ltl_to_input(p), ltl_to_input(q))
+        case Release(p, q): raise NotImplementedError(Release(p, q))
+        case Then(p, q): return prop.imply(ltl_to_input(p), ltl_to_input(q))
+        case Iff(p, q): return prop.iff(ltl_to_input(p), ltl_to_input(q))
+        case Finally(p, bound):
+            if not bound: return prop.f(ltl_to_input(p))
+            else:
+                s, e = bound
+                raise NotImplementedError("bound")
+        case Globally(p): return prop.g(ltl_to_input(p))
+        case Weak(p, q):  # = Release(q, Or(p, q))
+            raise NotImplementedError("weak")
+        case Strong(p, q):  # = Until(q, And(p, q))
+            raise NotImplementedError("strong")
+        case Previous(p):
+            spec = ltl_to_input(p)
+            s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_PREC, spec._ptr, None), freeit=False)
+            s._car = spec
+            return s
+        case Once(p, bound):
+            if not bound:
+                spec = ltl_to_input(p)
+                s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_ONCE, spec._ptr, None), freeit=False)
+                s._car = spec
+                return s
+            else:
+                s, e = bound
+                raise NotImplementedError("strong")
+
+        case _: raise NotImplementedError(ltl)
+
+
+def model_check_from_files(directory):
+    domain_file = f"{directory}/domain.pddl"
+    instance_names = get_instance_names(directory)
+    feature_file = f"data/{directory}/features.json"
+
+    def transition_path(instance_name):
+        return f"data/{directory}/transition_systems/{instance_name}.json"
+    def feature_valuation_path(instance_name):
+        return f"data/{directory}/feature_valuations/{instance_name}.json"
+    def smv_path(instance_name):
+            return f"data/{directory}/smvs/{instance_name}.json"
+
+    domain = ts.tarski.load_domain(domain_file)
+    vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
+    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
+
+    boolean_features, numerical_features = parse_features(read_feature_reprs(feature_file), factory)
     feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
+
+    make_instance_smvs(directory, boolean_features + numerical_features)
+
     for bs, ns in tqdm(feature_sets):
         rules = generate_rules(bs, ns)
-        filtered_rules = filter(lambda r: all([model_check.rule(i, r, directory + "miconic_2_r.smv") for i in domain.instances]), rules)
-        sketch_pool = generate_sketches_from_rules(filtered_rules, 1)
-
+        #filtered_rules = filter(lambda r: all([model_check.rule(i, r, directory + "miconic_2_r.smv") for i in domain.instances]), rules)
+        #sketch_pool = generate_sketches_from_rules(filtered_rules, 1)
+        sketch_pool = generate_sketches_from_rules(rules, 1)
+        """
         for s in sketch_pool:
             if all(model_check.sketch(i, s, directory) for i in domain.instances):
                 yield s
-"""
+        """
+        for s in sketch_pool:
+            tups = list_to_ruletups(s)
+            # print("t", tups)
+            arrow_sketch = ruletups_to_arrowsketch(tups)
+            # print("as", arrow_sketch.show())
+            checked = True
+            for inst in instance_names:
+                feature_vals:  dict[str, list[Union[bool, int]]] = read_valuations(feature_valuation_path(inst))
+                bounds: dict[dlplan.Numerical, int] = {n: max(feature_vals[n.compute_repr()]) for n in numerical_features}
+                ltl_rules = fill_in_rules(arrow_sketch.rules, bounds)
+
+                assert(len(ltl_rules) > 0)
+                g = FormulaGenerator(len(ltl_rules))
+                ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
+                ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
+
+                pynusmv.init.init_nusmv()
+                pynusmv.glob.load_from_file(filepath=smv_path(inst))
+                pynusmv.glob.compute_model()
+
+                #map(lambda spec: pynusmv.mc.check_ctl_spec(ctl_to_input(spec)), ctl_specs)
+                if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True, True, False]:
+                    checked = False
+                    break
+
+            if checked:
+                yield s
+
 
 
 if __name__ == '__main__':
-    #make_data_files("gripper_test")
-    test_read_states()
+    directory = "gripper_test"
+    write_all_transition_systems("gripper_test")
+    all_states = []
+    instances = []
+
+    for i in get_instance_names(directory):
+        domain_path: str = f"{directory}/domain.pddl"
+        domain = src.transition_system.tarski.load_domain(domain_path)
+        instance_path: str = f"{directory}/{i}.pddl"
+
+        iproblem = ts.tarski.load_instance(domain_path, instance_path)
+        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        states = read_states(instance, f"data/{directory}/states/{i}.json")
+        instances.append(instance)
+        all_states.append(states)
+
+
+    vocab: dlplan.VocabularyInfo = all_states[0][0].get_instance_info().get_vocabulary_info()
+    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
+    make_feature_file([s for sts in all_states for s in sts], f"data/{directory}/features.json", factory)
+    boolean_features, numerical_features = parse_features(read_feature_reprs(f"data/{directory}/features.json"), factory)
+    print(len(boolean_features), len(numerical_features))
+    for e, i in enumerate(get_instance_names(directory)):
+        write_feature_valuations(all_states[e], boolean_features + numerical_features, f"data/{directory}/feature_valuations/{i}.json")
+
+    make_instance_smvs(directory, boolean_features + numerical_features)
+
+    #test_read_states()
+
+    """
+    from pynusmv import prop
+
+    pynusmv.init.init_nusmv()
+    pynusmv.glob.load_from_file(filepath="blocks_clear_0.smv")
+    pynusmv.glob.compute_model()
+    def y(spec):
+        if spec is None:
+            raise ValueError()
+        # freeit=True seems to be erroneous
+        s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_PREC, spec._ptr, None), freeit=False)
+        s._car = spec
+        return s
+    spec = prop.x(y(prop.true() & prop.true()))
+    print(pynusmv.mc.check_ltl_spec(spec))
+    """
+
