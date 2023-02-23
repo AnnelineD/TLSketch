@@ -22,6 +22,7 @@ from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_i
     ruletups_to_arrowsketch
 from src.logics.formula_generation import FormulaGenerator
 from src.model_check.model_check import check_file, model_check_sketch
+import src.file_manager as fm
 
 
 def show_domain_info():
@@ -250,8 +251,6 @@ def model_check_sketches_bis():
             # print(i)
 
 
-
-
 def write_all_transition_systems(directory: str):
     domain_path: str = directory + "/domain.pddl"
     domain = src.transition_system.tarski.load_domain(domain_path)
@@ -264,8 +263,8 @@ def write_all_transition_systems(directory: str):
         tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
         dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
 
-        write_transition_system_and_states(dl_system, f"data/{directory}/transition_systems/{i_file.removesuffix('.pddl')}.json",f"data/{directory}/states/{i_file.removesuffix('.pddl')}.json")
-
+        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file.removesuffix('.pddl')}.json")
+        fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file.removesuffix('.pddl')}.json")
 
 def make_data_files(directory: str):
     """
@@ -318,17 +317,8 @@ def write_all_instances(directory: str, instance_files: list[str], domain_file: 
         tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
         dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
 
-        write_transition_system_and_states(dl_system, ts_dir + '/' + i_file.removesuffix(".pddl") + ".json", states_dir + '/' + i_file.removesuffix(".pddl") + ".json")
-
-
-
-
-def write_transition_system_and_states(dl_system: DLTransitionModel, system_path: str, states_path: str):
-    with open(system_path, "w") as trans_file:
-        json.dump({"init": dl_system.initial_state, "goal": dl_system.goal_states, "graph": dl_system.graph.adj}, trans_file)
-    with open(states_path, "w") as state_file:
-        json.dump([[dl_system.instance_info.get_atom(atom_idx).get_name() for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
-
+        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, ts_dir + '/' + i_file.removesuffix(".pddl") + ".json")
+        fm.write.dl_states(dl_system.states, states_dir + '/' + i_file.removesuffix(".pddl") + ".json")
 
 
 def make_feature_file(states: list[dlplan.State], file_path: str, factory: dlplan.SyntacticElementFactory):
