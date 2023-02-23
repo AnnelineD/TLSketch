@@ -487,6 +487,30 @@ def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
         case _: raise NotImplementedError(ltl)
 
 
+def ctl_to_input(f: ctl.CTLFormula) -> pynusmv.prop.Spec:
+    from pynusmv import prop
+    match f:
+        case ctl.Top(): return prop.true()
+        case ctl.Bottom(): return prop.false()
+        case ctl.Var(s) as x: return prop.atom(f"{s}")  # TODO make a special goal var
+        case ctl.Not(p): return prop.not_(ctl_to_input(p))
+        case ctl.And(p, q): return ctl_to_input(p) & ctl_to_input(q)
+        case ctl.Or(p, q): return ctl_to_input(p) | ctl_to_input(q)
+        case ctl.EX(p): return prop.ex(ctl_to_input(p))
+        case ctl.AX(p): return prop.ax(ctl_to_input(p))
+        case ctl.Then(p, q): return prop.imply(ctl_to_input(p), ctl_to_input(q))
+        case ctl.Iff(p, q): return prop.iff(ctl_to_input(p), ctl_to_input(q))
+        case ctl.EF(p, bound):
+            if not bound: return prop.ef(ctl_to_input(p))
+            else: NotImplementedError(f)
+        case ctl.AF(p, bound):
+            if not bound: return prop.af(ctl_to_input(p))
+            else: NotImplementedError(f)
+        case ctl.EG(p): return prop.eg(ctl_to_input(p))
+        case ctl.AG(p): return prop.ag(ctl_to_input(p))
+        case _: raise NotImplementedError(f)
+
+
 def model_check_from_files(directory):
     domain_file = f"{directory}/domain.pddl"
     instance_names = get_instance_names(directory)
@@ -497,7 +521,7 @@ def model_check_from_files(directory):
     def feature_valuation_path(instance_name):
         return f"data/{directory}/feature_valuations/{instance_name}.json"
     def smv_path(instance_name):
-            return f"data/{directory}/smvs/{instance_name}.json"
+            return f"data/{directory}/smvs/{instance_name}.smv"
 
     domain = ts.tarski.load_domain(domain_file)
     vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
@@ -527,28 +551,44 @@ def model_check_from_files(directory):
             for inst in instance_names:
                 feature_vals:  dict[str, list[Union[bool, int]]] = read_valuations(feature_valuation_path(inst))
                 bounds: dict[dlplan.Numerical, int] = {n: max(feature_vals[n.compute_repr()]) for n in numerical_features}
-                ltl_rules = fill_in_rules(arrow_sketch.rules, bounds)
-
-                assert(len(ltl_rules) > 0)
-                g = FormulaGenerator(len(ltl_rules))
-                ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
-                ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
-
-                pynusmv.init.init_nusmv()
-                pynusmv.glob.load_from_file(filepath=smv_path(inst))
-                pynusmv.glob.compute_model()
-
-                #map(lambda spec: pynusmv.mc.check_ctl_spec(ctl_to_input(spec)), ctl_specs)
-                if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True, True, False]:
+                ltl_rules: list[LTLRule] = fill_in_rules(arrow_sketch.rules, bounds)
+                if len(ltl_rules) == 0:
                     checked = False
                     break
 
+                if len(ltl_rules) > 0:
+                    g = FormulaGenerator(len(ltl_rules))
+                    ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
+                    ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
+
+                    with open(smv_path(inst), 'r') as f:
+                        system = f.read()
+
+                    with open(f"data/{directory}/smvs/temp.smv", 'w') as f:
+                        f.write(system + '\n' + rules_to_smv(ltl_rules) + '\n')
+
+                    pynusmv.init.init_nusmv()
+                    pynusmv.glob.load_from_file(filepath=f"data/{directory}/smvs/temp.smv")
+                    pynusmv.glob.compute_model()
+                    fsm = pynusmv.glob.prop_database().master.bddFsm
+
+                    #map(lambda spec: pynusmv.mc.check_ctl_spec(ctl_to_input(spec)), ctl_specs)
+                    if list(map(lambda spec: pynusmv.mc.check_ctl_spec(fsm, ctl_to_input(spec)), ctl_specs)) != [False, True]:
+                        assert(checked)
+                        checked = False
+                        pynusmv.init.deinit_nusmv()
+                        break
+                    if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True, True, False]:
+                        assert(checked)
+                        checked = False
+                        pynusmv.init.deinit_nusmv()
+                        break
+                    pynusmv.init.deinit_nusmv()
+
             if checked:
-                yield s
+                yield arrow_sketch
 
-
-
-if __name__ == '__main__':
+def main_write_everything():
     directory = "gripper_test"
     write_all_transition_systems("gripper_test")
     all_states = []
@@ -576,6 +616,18 @@ if __name__ == '__main__':
 
     make_instance_smvs(directory, boolean_features + numerical_features)
 
+
+if __name__ == '__main__':
+    sketches = list(model_check_from_files("gripper_test"))
+    for s in sketches:
+        print(s.show())
+
+    print()
+
+    sketches_ = list(model_check_sketches_bis())
+    for s in sketches_:
+        print(s.show())
+
     #test_read_states()
 
     """
@@ -584,6 +636,12 @@ if __name__ == '__main__':
     pynusmv.init.init_nusmv()
     pynusmv.glob.load_from_file(filepath="blocks_clear_0.smv")
     pynusmv.glob.compute_model()
+    fsm = pynusmv.glob.prop_database().master.bddFsm
+    for state in fsm.pick_all_states(fsm.init):
+        print(state.get_str_values())
+
+
+
     def y(spec):
         if spec is None:
             raise ValueError()
@@ -591,6 +649,7 @@ if __name__ == '__main__':
         s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_PREC, spec._ptr, None), freeit=False)
         s._car = spec
         return s
+
     spec = prop.x(y(prop.true() & prop.true()))
     print(pynusmv.mc.check_ltl_spec(spec))
     """
