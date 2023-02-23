@@ -23,31 +23,39 @@ class TransitionSystem(unittest.TestCase):
                           'graph': [[[1], ['01']], [[2], ['12']], [[3], ['23']], [[0], ['30']]],
                           'init': 1})
 
+        rgraph, rinit, rgoal = fm.read.transition_system(file)
+        self.assertEqual(rgraph.adj, adj)
+        self.assertEqual(rinit, init)
+        self.assertEqual(rgoal, goal)
+
 
 class States(unittest.TestCase):
-    def test_states(self):
+    def setUp(self) -> None:
         domain_path: str = "gripper/domain.pddl"
         domain = src.transition_system.tarski.load_domain(domain_path)
         instance_path: str = "gripper_test/p-1-0.pddl"
 
         iproblem = ts.tarski.load_instance(domain_path, instance_path)
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        self.instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
 
         tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
-        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
+        self.dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, self.instance)
 
-        states = dl_system.states
-        fm.write.dl_states(states, "test/generated/states.json")
+        self.states = self.dl_system.states
+
+
+    def test_write_states(self):
+        fm.write.dl_states(self.states, "test/generated/states.json")
 
         with open("test/generated/states.json", 'r') as f:
             data = json.load(f)
 
-        self.assertEqual(data,
-                         [["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,rooma)", "at-robby(rooma)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,rooma)", "at-robby(roomb)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "at-robby(rooma)", "carry(ball1,left)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(left)", "at-robby(rooma)", "carry(ball1,right)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(left)", "at-robby(roomb)", "carry(ball1,right)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,roomb)", "at-robby(roomb)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,roomb)", "at-robby(rooma)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "at-robby(roomb)", "carry(ball1,left)"]])
+        self.assertEqual(list(map(lambda x: set(x), data)),
+                         list(map(lambda x: set(x), [["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,rooma)", "at-robby(rooma)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,rooma)", "at-robby(roomb)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "at-robby(rooma)", "carry(ball1,left)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(left)", "at-robby(rooma)", "carry(ball1,right)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(left)", "at-robby(roomb)", "carry(ball1,right)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,roomb)", "at-robby(roomb)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "free(left)", "at(ball1,roomb)", "at-robby(rooma)"], ["room(rooma)", "room(roomb)", "gripper(right)", "gripper(left)", "ball(ball1)", "free(right)", "at-robby(roomb)", "carry(ball1,left)"]])))
 
-        # states = read_states(instance, "data/state_files/gripper_test/p-1-0.json")
-        # for i, state in enumerate(states):
-        #     print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
+        rstates = fm.read.dl_states("test/generated/states.json", self.instance)
+        for s, rs in zip(self.states, rstates):
+            self.assertEqual(s, rs)
 
 
 

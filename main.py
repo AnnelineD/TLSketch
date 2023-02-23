@@ -345,12 +345,6 @@ def read_feature_reprs(file_path) -> list[str]:
         return json.load(fp)
 
 
-def read_states(instance: dlplan.InstanceInfo, state_file: str) -> list[dlplan.State]:
-    with open(state_file, "r") as sf:
-        data = json.load(sf)
-    return [dlplan.State(instance, [instance.get_atom(instance.get_atom_idx(str(a))) for a in state]) for state in data]
-
-
 def test_read_states():
     domain_path: str = "gripper/domain.pddl"
     domain = src.transition_system.tarski.load_domain(domain_path)
@@ -359,18 +353,10 @@ def test_read_states():
     iproblem = ts.tarski.load_instance(domain_path, instance_path)
     instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
 
-    states = read_states(instance, "data/state_files/gripper_test/p-1-0.json")
+    states = fm.read.dl_states("data/state_files/gripper_test/p-1-0.json", instance)
     for i, state in enumerate(states):
         print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
 
-
-def read_trans_sys(file_path) -> (int, int, DirectedGraph):
-    with open(file_path, "r") as f:
-        data = json.load(f)
-        init = data["init"]
-        goal = data["goal"]
-        adj = data["graph"]
-    return init, goal, DirectedGraph(adj)
 
 def read_valuations(file_path) -> dict[str, list[Union[bool, int]]]:
     with open(file_path, "r") as f:
@@ -390,7 +376,7 @@ class Instance:
 
 
 def read_instance(transition_path, valuation_path) -> Instance:
-        init, goal, graph = read_trans_sys(transition_path)
+        graph, init, goal = fm.read.transition_system(transition_path)
         valuations = read_valuations(valuation_path)
         return Instance(graph, init, goal, valuations)
 
@@ -591,7 +577,7 @@ def main_write_everything():
 
         iproblem = ts.tarski.load_instance(domain_path, instance_path)
         instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        states = read_states(instance, f"data/{directory}/states/{i}.json")
+        states = fm.read.dl_states(f"data/{directory}/states/{i}.json", instance)
         instances.append(instance)
         all_states.append(states)
 
