@@ -251,20 +251,25 @@ def model_check_sketches_bis():
             # print(i)
 
 
-def write_all_transition_systems(directory: str):
+def calc_and_write_transition_systems(directory: str):
+    """
+
+    :param directory: We assume that the directory has one domain file called "domain.pddl", and all the remaining files are instance files
+    :return:
+    """
     domain_path: str = directory + "/domain.pddl"
     domain = src.transition_system.tarski.load_domain(domain_path)
-    instance_files: list[str] = sorted(os.listdir(directory))
-    instance_files.remove("domain.pddl")
+    instance_files: list[str] = get_instance_names(directory)
 
     for i_file in tqdm(instance_files):
-        iproblem = ts.tarski.load_instance(domain_path, directory + '/' + i_file)
+        iproblem = ts.tarski.load_instance(domain_path, f"{directory}/{i_file}.pddl")
         instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
         tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
         dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
 
-        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file.removesuffix('.pddl')}.json")
-        fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file.removesuffix('.pddl')}.json")
+        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file}.json")
+        fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file}.json")
+
 
 def make_data_files(directory: str):
     """
@@ -307,18 +312,6 @@ def make_data_files(directory: str):
     for file, sts in states_per_instance.items():
         with open("feature_valuations/" + file + ".json", "w") as feature_file:
             json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
-
-
-def write_all_instances(directory: str, instance_files: list[str], domain_file: str, ts_dir, states_dir):
-    domain = ts.tarski.load_domain(directory + '/' + domain_file)
-    for i_file in tqdm(instance_files):
-        iproblem = ts.tarski.load_instance(directory + '/' + domain_file, directory + '/' + i_file)
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
-        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
-
-        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, ts_dir + '/' + i_file.removesuffix(".pddl") + ".json")
-        fm.write.dl_states(dl_system.states, states_dir + '/' + i_file.removesuffix(".pddl") + ".json")
 
 
 def make_feature_file(states: list[dlplan.State], file_path: str, factory: dlplan.SyntacticElementFactory):
@@ -566,7 +559,7 @@ def model_check_from_files(directory):
 
 def main_write_everything():
     directory = "gripper_test"
-    write_all_transition_systems("gripper_test")
+    calc_and_write_transition_systems("gripper_test")
     all_states = []
     instances = []
 
@@ -594,6 +587,11 @@ def main_write_everything():
 
 
 if __name__ == '__main__':
+    import time
+    start_time = time.time()
+    calc_and_write_transition_systems("gripper")
+    print("My program took", time.time() - start_time, "to run")
+    """
     sketches = list(model_check_from_files("gripper_test"))
     for s in sketches:
         print(s.show())
@@ -603,7 +601,7 @@ if __name__ == '__main__':
     sketches_ = list(model_check_sketches_bis())
     for s in sketches_:
         print(s.show())
-
+    """
     #test_read_states()
 
     """

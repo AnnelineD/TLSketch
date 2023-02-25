@@ -1,6 +1,9 @@
 import unittest
 
 import json
+
+import dlplan
+
 import src
 import src.file_manager as fm
 from src.transition_system.graph import DirectedGraph
@@ -37,12 +40,15 @@ class States(unittest.TestCase):
 
         iproblem = ts.tarski.load_instance(domain_path, instance_path)
         self.instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+        self.factory = dlplan.SyntacticElementFactory(self.instance.get_vocabulary_info())
 
         tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
         self.dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, self.instance)
 
         self.states = self.dl_system.states
 
+        self.b1 = "b_empty(c_and(c_one_of(rooma),c_primitive(at-robby,0)))"
+        self.n1 = "n_count(c_primitive(carry,0))"
 
     def test_write_states(self):
         fm.write.dl_states(self.states, "test/generated/states.json")
@@ -56,6 +62,23 @@ class States(unittest.TestCase):
         rstates = fm.read.dl_states("test/generated/states.json", self.instance)
         for s, rs in zip(self.states, rstates):
             self.assertEqual(s, rs)
+
+    def test_feature_reprs(self):
+        fm.write.feature_representations(["b_empty(c_and(c_one_of(rooma),c_primitive(at-robby,0)))", "n_count(c_primitive(carry,0))"], "test/generated/feature_reps")
+        with open("test/generated/feature_reps", 'r') as f:
+            data = json.load(f)
+
+        self.assertEqual(data, ["b_empty(c_and(c_one_of(rooma),c_primitive(at-robby,0)))", "n_count(c_primitive(carry,0))"])
+
+    def test_features(self):
+        b1 = self.factory.parse_boolean(self.b1)
+        n1 = self.factory.parse_numerical(self.n1)
+        fm.write.features([b1, n1], "test/generated/features")
+
+        with open("test/generated/features", 'r') as f:
+            data = json.load(f)
+
+        self.assertEqual(data, [self.b1, self.n1])
 
 
 

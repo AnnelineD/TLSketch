@@ -1,6 +1,8 @@
 import json
 import os.path
+from typing import Union
 
+import dlplan
 from dlplan import State as DLState
 
 from src.transition_system.graph import DirectedGraph
@@ -26,3 +28,18 @@ def dl_states(states: list[DLState], file_path: str, override: bool = True):
         json.dump([[states[0].get_instance_info().get_atom(atom_idx).get_name()
                     for atom_idx in state.get_atom_idxs()]
                    for state in states], state_file)
+
+
+def feature_representations(features: list[str], file_path: str):
+    with open(file_path, "w") as f:
+        json.dump(features, f)
+
+
+def features(features: list[Union[dlplan.Numerical, dlplan.Boolean]], file_path: str):
+    reprs = list(map(lambda x: x.compute_repr(), features))
+    feature_representations(reprs, file_path)
+
+
+def feature_valuations(valuations: dict[Union[dlplan.Numerical, dlplan.Boolean], Union[list[int], list[bool]]], file_path: str):
+    with open(file_path, "w") as feature_file:
+        json.dump(valuations, feature_file)
