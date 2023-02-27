@@ -40,3 +40,9 @@ def repr_feature(f: Union[dlplan.Numerical, dlplan.Boolean]) -> str:
         case x if isinstance(x, dlplan.Boolean): return f"b{f.get_index()}"
         case x if isinstance(x, dlplan.Numerical): return f"n{f.get_index()}"
         case _: print("something went wrong with the feature representation")  # TODO raise error
+
+
+def parse_features(feature_reprs: list[str], factory: dlplan.SyntacticElementFactory) -> tuple[list[dlplan.Boolean], list[dlplan.Numerical]]:
+    boolean_features: list[dlplan.Boolean] = [factory.parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
+    numerical_features: list[dlplan.Numerical] = [factory.parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
+    return boolean_features, numerical_features

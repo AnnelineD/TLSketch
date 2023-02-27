@@ -23,6 +23,7 @@ from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_i
 from src.logics.formula_generation import FormulaGenerator
 from src.model_check.model_check import check_file, model_check_sketch
 import src.file_manager as fm
+from src.dlplan_utils import parse_features
 
 
 def show_domain_info():
@@ -314,20 +315,6 @@ def make_data_files(directory: str):
             json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
 
 
-def make_feature_file(states: list[dlplan.State], file_path: str, factory: dlplan.SyntacticElementFactory):
-    generator = construct_feature_generator()
-    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, states)
-    with open(file_path, 'w') as fp:
-        json.dump(feature_reprs, fp)
-    return feature_reprs
-
-
-def parse_features(feature_reprs: list[str], factory: dlplan.SyntacticElementFactory) -> tuple[list[dlplan.Boolean], list[dlplan.Numerical]]:
-    boolean_features: list[dlplan.Boolean] = [factory.parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
-    numerical_features: list[dlplan.Numerical] = [factory.parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
-    return boolean_features, numerical_features
-
-
 def write_feature_valuations(states: list[dlplan.State], features: list[any], file_path: str):
     with open(file_path, "w") as feature_file:
         json.dump({f.compute_repr(): [f.evaluate(s) for s in states] for f in features}, feature_file)
@@ -400,7 +387,7 @@ def make_instance_smv(i: Instance, features):
 def get_instance_names(directory):
     instance_files: list[str] = sorted(os.listdir(directory))
     instance_files.remove("domain.pddl")
-    return [fn.removesuffix(".pddl") for fn in instance_files]
+    return [fn.removesuffix(".pddl") for fn in instance_files if fn.endswith(".pddl")]
 
 
 def make_instance_smvs(directory, features):
@@ -557,47 +544,74 @@ def model_check_from_files(directory):
             if checked:
                 yield arrow_sketch
 
-def main_write_everything():
-    directory = "gripper_test"
-    calc_and_write_transition_systems("gripper_test")
+
+def calc_and_write_features(directory):
     all_states = []
     instances = []
+    domain_path: str = f"{directory}/domain.pddl"
+    domain = src.transition_system.tarski.load_domain(domain_path)
 
     for i in get_instance_names(directory):
-        domain_path: str = f"{directory}/domain.pddl"
-        domain = src.transition_system.tarski.load_domain(domain_path)
+
         instance_path: str = f"{directory}/{i}.pddl"
 
         iproblem = ts.tarski.load_instance(domain_path, instance_path)
         instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
         states = fm.read.dl_states(f"data/{directory}/states/{i}.json", instance)
         instances.append(instance)
-        all_states.append(states)
+        all_states.extend(states)
 
-
-    vocab: dlplan.VocabularyInfo = all_states[0][0].get_instance_info().get_vocabulary_info()
+    vocab: dlplan.VocabularyInfo = all_states[0].get_instance_info().get_vocabulary_info()
     factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
-    make_feature_file([s for sts in all_states for s in sts], f"data/{directory}/features.json", factory)
-    boolean_features, numerical_features = parse_features(read_feature_reprs(f"data/{directory}/features.json"), factory)
-    print(len(boolean_features), len(numerical_features))
-    for e, i in enumerate(get_instance_names(directory)):
-        write_feature_valuations(all_states[e], boolean_features + numerical_features, f"data/{directory}/feature_valuations/{i}.json")
+    generator = construct_feature_generator()
+    # (syntactic_element_factory, config.complexity, config.time_limit, config.feature_limit, config.num_threads_feature_generator, dlplan_states)  # generate features with all states of instances
+    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, all_states)
+    fm.write.feature_representations([r for r in feature_reprs if r.startswith("n_") or r.startswith("b_")], f"data/{directory}/features.json")
 
-    make_instance_smvs(directory, boolean_features + numerical_features)
+
+def calc_and_write_feature_valuations(directory):
+    domain = src.transition_system.tarski.load_domain(f"{directory}/domain.pddl")
+
+    for inst in get_instance_names(directory):
+        iproblem = ts.tarski.load_instance(f"{directory}/domain.pddl", f"{directory}/{inst}.pddl")
+        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
+
+        factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(instance.get_vocabulary_info())    # factory must be calculated through vocab info of an instance to work around "mismatched vocab" error
+        bf, nf = fm.read.features(f"data/{directory}/features.json", factory)
+
+        states = fm.read.dl_states(f"data/{directory}/states/{inst}.json", instance)
+
+        fm.write.feature_valuations({f.compute_repr(): [f.evaluate(s) for s in states] for f in bf + nf}, f"data/{directory}/feature_valuations/{inst}.json")
+
+
+def write_smvs(directory):
+    domain_path: str = f"{directory}/domain.pddl"
+    domain = src.transition_system.tarski.load_domain(domain_path)
+    vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
+    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
+
+    bf, nf = fm.read.features(f"data/{directory}/features.json", factory)
+    make_instance_smvs(directory, bf + nf)
+
+
+def main_write_transition_sys(domain):
+    import time
+    start_time = time.time()
+    calc_and_write_transition_systems(domain)
+    print("My program took", time.time() - start_time, "to run")
 
 
 if __name__ == '__main__':
-    import time
-    start_time = time.time()
-    calc_and_write_transition_systems("gripper")
-    print("My program took", time.time() - start_time, "to run")
+    main_write_transition_sys("blocks_4_clear")
+
     """
     sketches = list(model_check_from_files("gripper_test"))
     for s in sketches:
         print(s.show())
 
     print()
-
+    """
+    """
     sketches_ = list(model_check_sketches_bis())
     for s in sketches_:
         print(s.show())

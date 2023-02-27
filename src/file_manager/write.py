@@ -40,6 +40,6 @@ def features(features: list[Union[dlplan.Numerical, dlplan.Boolean]], file_path:
     feature_representations(reprs, file_path)
 
 
-def feature_valuations(valuations: dict[Union[dlplan.Numerical, dlplan.Boolean], Union[list[int], list[bool]]], file_path: str):
+def feature_valuations(valuations: dict[str, Union[list[int], list[bool]]], file_path: str):
     with open(file_path, "w") as feature_file:
         json.dump(valuations, feature_file)
