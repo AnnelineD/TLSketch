@@ -238,7 +238,7 @@ def model_check_sketches_bis():
 
             return check_rule_file(filepath)
         f_domain = domain.dl_system.add_features(bs + ns)
-        filtered_rules = filter(lambda r: model_check_rule(f_domain, r, directory + "miconic_2_r.smv"), rules)
+        filtered_rules = filter(lambda r: model_check_rule(f_domain, r, directory + "gripper.smv"), rules)
         #print(len(list(filtered_rules)))
         sketches = generate_sketches_from_rules(filtered_rules, 1)
 
@@ -265,11 +265,12 @@ def calc_and_write_transition_systems(directory: str):
     for i_file in tqdm(instance_files):
         iproblem = ts.tarski.load_instance(domain_path, f"{directory}/{i_file}.pddl")
         instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
-        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
+        if not os.path.isfile(f"data/{directory}/transition_systems/{i_file}.json"):        # don't calculate the transition system if we already did that
+            tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
+            dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
 
-        fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file}.json")
-        fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file}.json")
+            fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file}.json")
+            fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file}.json")
 
 
 def make_data_files(directory: str):
@@ -315,16 +316,6 @@ def make_data_files(directory: str):
             json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
 
 
-def write_feature_valuations(states: list[dlplan.State], features: list[any], file_path: str):
-    with open(file_path, "w") as feature_file:
-        json.dump({f.compute_repr(): [f.evaluate(s) for s in states] for f in features}, feature_file)
-
-
-def read_feature_reprs(file_path) -> list[str]:
-    with open(file_path) as fp:
-        return json.load(fp)
-
-
 def test_read_states():
     domain_path: str = "gripper/domain.pddl"
     domain = src.transition_system.tarski.load_domain(domain_path)
@@ -336,12 +327,6 @@ def test_read_states():
     states = fm.read.dl_states("data/state_files/gripper_test/p-1-0.json", instance)
     for i, state in enumerate(states):
         print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
-
-
-def read_valuations(file_path) -> dict[str, list[Union[bool, int]]]:
-    with open(file_path, "r") as f:
-        data = json.load(f)
-    return data
 
 
 class Instance:
@@ -357,7 +342,7 @@ class Instance:
 
 def read_instance(transition_path, valuation_path) -> Instance:
         graph, init, goal = fm.read.transition_system(transition_path)
-        valuations = read_valuations(valuation_path)
+        valuations = fm.read.feature_valuations(valuation_path)
         return Instance(graph, init, goal, valuations)
 
 
@@ -483,7 +468,7 @@ def model_check_from_files(directory):
     vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
     factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
 
-    boolean_features, numerical_features = parse_features(read_feature_reprs(feature_file), factory)
+    boolean_features, numerical_features = parse_features(fm.read.feature_representations(feature_file), factory)
     feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
 
     make_instance_smvs(directory, boolean_features + numerical_features)
@@ -505,7 +490,7 @@ def model_check_from_files(directory):
             # print("as", arrow_sketch.show())
             checked = True
             for inst in instance_names:
-                feature_vals:  dict[str, list[Union[bool, int]]] = read_valuations(feature_valuation_path(inst))
+                feature_vals:  dict[str, list[Union[bool, int]]] = fm.read.feature_valuations(feature_valuation_path(inst))
                 bounds: dict[dlplan.Numerical, int] = {n: max(feature_vals[n.compute_repr()]) for n in numerical_features}
                 ltl_rules: list[LTLRule] = fill_in_rules(arrow_sketch.rules, bounds)
                 if len(ltl_rules) == 0:
@@ -514,8 +499,8 @@ def model_check_from_files(directory):
 
                 if len(ltl_rules) > 0:
                     g = FormulaGenerator(len(ltl_rules))
-                    ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
-                    ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
+                    ltl_specs = [g.rules_followed_then_goal()]
+                    ctl_specs = [g.ctl_rule_can_be_followed()]
 
                     with open(smv_path(inst), 'r') as f:
                         system = f.read()
@@ -529,12 +514,12 @@ def model_check_from_files(directory):
                     fsm = pynusmv.glob.prop_database().master.bddFsm
 
                     #map(lambda spec: pynusmv.mc.check_ctl_spec(ctl_to_input(spec)), ctl_specs)
-                    if list(map(lambda spec: pynusmv.mc.check_ctl_spec(fsm, ctl_to_input(spec)), ctl_specs)) != [False, True]:
+                    if list(map(lambda spec: pynusmv.mc.check_ctl_spec(fsm, ctl_to_input(spec)), ctl_specs)) != [True]:
                         assert(checked)
                         checked = False
                         pynusmv.init.deinit_nusmv()
                         break
-                    if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True, True, False]:
+                    if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True]:
                         assert(checked)
                         checked = False
                         pynusmv.init.deinit_nusmv()
@@ -584,7 +569,7 @@ def calc_and_write_feature_valuations(directory):
         fm.write.feature_valuations({f.compute_repr(): [f.evaluate(s) for s in states] for f in bf + nf}, f"data/{directory}/feature_valuations/{inst}.json")
 
 
-def write_smvs(directory):
+def write_smvs(directory) -> object:
     domain_path: str = f"{directory}/domain.pddl"
     domain = src.transition_system.tarski.load_domain(domain_path)
     vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
@@ -602,15 +587,15 @@ def main_write_transition_sys(domain):
 
 
 if __name__ == '__main__':
-    main_write_transition_sys("blocks_4_clear")
+    # main_write_transition_sys("childsnack")
+    # write_smvs("blocks_4_clear")
 
-    """
+
     sketches = list(model_check_from_files("gripper_test"))
     for s in sketches:
         print(s.show())
 
     print()
-    """
     """
     sketches_ = list(model_check_sketches_bis())
     for s in sketches_:
