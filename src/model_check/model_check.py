@@ -10,7 +10,7 @@ from src.logics.sketch_to_ltl import fill_in_rules, list_to_ruletups, ruletups_t
 from src.to_smv.make_smv import to_smv_format
 
 
-def write_smv(f_domain, sketch: ArrowLTLSketch, filepath: str = None):
+def write_smv(f_domain: DLFeatureTransitionModel, sketch: ArrowLTLSketch, filepath: str = None):
     ltl_rules = fill_in_rules(sketch.rules, f_domain.get_feature_bounds())
     if len(ltl_rules) > 0:
         g = FormulaGenerator(len(ltl_rules))

@@ -1,84 +1,50 @@
-class Sketch():
-    def get_LTL_representation(self, bounds) -> list[LTLRule]:
-        ...
+import pynusmv
+
+from ..logics.rules import *
+from ..sketch_verification.feature_instance import FeatureInstance
+from ..logics.laws import *
+from ..to_smv.make_smv import to_smv_format
+from ..sketch_verification import logic_translation
 
 
-class AbstractLaw:
-    spec: ...
-    truth: ...
-    def expand(self):
-        ...
-
-class Law:
-    spec: ...
-    truth: ...
-
-class InstanceInfo():
-    self.graph: directedGraph = transitions_sys
-    self.init = init
-    self.goal_states = goal_states
-    self.valuations = valuations
-
-    def get_bounds(self):
-        ...
-
-    def _make_instance_smv(self, filename):
-        ...
-
-
-class VerificationContext:
-    sketch: Sketch
-    instance_info
-    constraints = []
-
-    def __init__(self, constraints: list[Contraint]):
-        generator = self.get_LTLSketch.n_rules
-        self.constraints = ...
-
-    def get_LTL_sketch(self) -> LTLSketch:
-        sketch.fill_in_bounds(instance_info.bounds)
-
-    def make_smv_file(self, filename):
-        ...
-
-
-def verify_sketch(sketch: Sketch, instance: InstanceInfo, abstract_laws) -> bool:
+def verify_sketch(sketch: Sketch, instance: FeatureInstance, abstract_laws: list[AbstractLaw]) -> bool:
     bounds = instance.get_bounds()
-    ltl_arrow = toLTLArrow(sketch)
-    ltl_sketch = ltl_arrow.fill_in_bounds(bounds)
-    laws = [expand(law, ltl_sketch.n_rules) for law in abstract_laws]
+    ltl_sketch: LTLSketch = sketch.to_ltl(bounds)
+    laws = [law.expand(ltl_sketch.n_rules()) for law in abstract_laws]
     return verification(ltl_sketch, instance, laws)
 
 
 def verification(ltl_sketch, instance, laws) -> bool:
-    filepath = "temp"
+    filepath = "temp.smv"
     with open(filepath, 'w') as f:
         f.write(to_smv_format(instance, ltl_sketch))
     return check_file(filepath, laws)
 
 
-def check_file(filepath, laws: list[Law]):
+def check_file(filepath: str, laws: list[Law]):
     pynusmv.init.init_nusmv()
     pynusmv.glob.load_from_file(filepath=filepath)
     pynusmv.glob.compute_model()
     fsm = pynusmv.glob.prop_database().master.bddFsm
 
-    for l in law:
-        if l.lan == "CTL":
-            if pynusmv.mc.check_ctl_spec(fsm, ctl_to_input(l.spec)) != l.truth:
-                pynusmv.init.deinit_nusmv()
-                return False
-        if l.lan == "LTL":
-            if pynusmv.mc.check_ltl_spec(ltl_to_input(l.spec)) != l.truth:
-                pynusmv.init.deinit_nusmv()
-                return False
+    for l in laws:
+        match l.formula:
+            case f if isinstance(f, CTLFormula):
+                if pynusmv.mc.check_ctl_spec(fsm, logic_translation.ctl_to_input(l.formula)) != l.truth:
+                    pynusmv.init.deinit_nusmv()
+                    return False
+            case f if isinstance(f, LTLFormula):
+                if pynusmv.mc.check_ltl_spec(logic_translation.ltl_to_input(l.formula)) != l.truth:
+                    pynusmv.init.deinit_nusmv()
+                    return False
 
     pynusmv.init.deinit_nusmv()
     return True
 
 
-
+"""
 def main():
     for s in sketches:
         for i in instances:
             verify_sketch(sketch, i, laws)
+"""

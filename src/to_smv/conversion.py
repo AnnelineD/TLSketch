@@ -1,4 +1,4 @@
-from src.logics.rules import LTLRule
+from src.logics.rules import LTLSketch
 from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
@@ -22,25 +22,38 @@ def graph_to_smv(graph: DirectedGraph, init_index):
 def transition_system_to_smv(transition_system: DLTransitionModel):
     return graph_to_smv(transition_system.graph, transition_system.initial_state)
 
-
+"""
 def features_to_smv(ts: DLFeatureTransitionModel):
     tab = '\t'
     nl = '\n'
     return f"DEFINE \n " \
     f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s.get_index()}: {str(ts.features[fn][s]).upper()};' for s in ts.transition_model.states)} {nl + tab}esac;''' for fn in ts.features.keys())}\n"\
     f"{tab}goal := state in {{{', '.join({f's{i}' for i in ts.transition_model.goal_states})}}};"
+"""
 
+def valuations_to_smv(vals: dict[str, list[Union[bool, int]]], goals: list[int]) -> str:
+    tab = '\t'
+    nl = '\n'
+    return f"DEFINE \n " \
+           f"{nl.join(f''' {tab}{repr_feature_str(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{e}: {str(s).upper()};' for e, s in enumerate(val))} {nl + tab}esac;''' for fn, val in vals.items())}\n" \
+           f"{tab}goal := state in {{{', '.join({f's{i}' for i in goals})}}};"
 
+"""
 def rules_to_smv(rules: list[LTLRule]) -> str:
     return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)}; \n \te{i} := {ltl_to_smv(r.effects)};" for i, r in enumerate(rules)])
+"""
+
+
+def rules_to_smv(ltl_sketch: LTLSketch) -> str:
+    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)}; \n \te{i} := {ltl_to_smv(r.effects)};" for i, r in enumerate(ltl_sketch.rules)])
 
 
 def ltl_to_smv(ltl: LTLFormula) -> str:
     match ltl:
         case Top(): return "TRUE"
         case Bottom(): return "FALSE"
-        case BooleanVar(f, v): return f"{repr_feature(f)}={str(v).upper()}"
-        case NumericalVar(f, v): return f"{repr_feature(f)}={str(v).upper()}"
+        case BooleanVar(f, v): return f"{repr_feature_str(f.compute_repr())}={str(v).upper()}"
+        case NumericalVar(f, v): return f"{repr_feature_str(f.compute_repr())}={str(v).upper()}"
         case Var(s) as x: return f"{s}"  # TODO make a special goal var
         case Not(p): return f"!{ltl_to_smv(p)}"
         case And(p, q): return f"({ltl_to_smv(p)} & {ltl_to_smv(q)})"
@@ -92,3 +105,8 @@ def ctl_to_smv(f: ctl.CTLFormula) -> str:
         case ctl.EG(p): return f"EG({ctl_to_smv(p)})"
         case ctl.AG(p): return f"AG({ctl_to_smv(p)})"
         case _: raise NotImplementedError(f)
+
+
+#TODO find good representations
+def repr_feature_str(feature: str):
+    return feature.replace("(", "").replace(")", "").replace(',', '').replace("-", "")

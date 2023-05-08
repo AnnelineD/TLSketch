@@ -1,5 +1,6 @@
 from typing import Union
 
+from src.sketch_verification.feature_instance import FeatureInstance
 from src.transition_system.graph import DirectedGraph
 from src.dlplan_utils import parse_features
 import json
@@ -40,3 +41,10 @@ def feature_valuations(file_path: str) -> dict[str, Union[list[int], list[bool]]
     with open(file_path, "r") as f:
         data = json.load(f)
     return data
+
+
+def feature_instance(transition_path: str, valuation_path: str) -> FeatureInstance:
+    graph, init, goals = transition_system(transition_path)
+    valuations = feature_valuations(valuation_path)
+    return FeatureInstance(graph, init, goals, valuations)
+

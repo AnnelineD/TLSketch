@@ -14,7 +14,7 @@ class MyTestCase(unittest.TestCase):
 
         return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
 
-    def test_blocks_clear(self):
+    def test_blocks_clear_(self):
         factory = self.get_factory("../../blocks_4_clear/domain.pddl", "../../blocks_4_clear/p-3-0.pddl")
 
         """
@@ -30,22 +30,23 @@ class MyTestCase(unittest.TestCase):
 
         h = sketch_0.get_boolean_features()[0]
         n = sketch_0.get_numerical_features()[0]
-        arrow_sketch_0 = policy_to_arrowsketch(sketch_0)
+        rule_tups = policy_to_rule_tuples(sketch_0)
+        sketch = Sketch([SketchRule(cs, es[0]) for cs, es in rule_tups])
 
-        wanted_rules_0: list[ArrowLTLRule] = [
-                ArrowLTLRule(Var(CZero(n)), Var(EPositive(h)) & Var(ENAny(n))),
-                ArrowLTLRule(Var(CGreater(n)), (Var(ENegative(h)) & Var(EDecr(n))) | (Var(EPositive(h)) & Var(ENAny(n))))
-            ]
-
-        self.assertEqual(wanted_rules_0, arrow_sketch_0.rules)
-
-        wanted_ltl_0 = [
-            LTLRule(NumericalVar(n, 0), BooleanVar(h, True) & NumericalVar(n, 0)),
-            LTLRule(NumericalVar(n, 1), ((BooleanVar(h, False) & NumericalVar(n, 0)) | (BooleanVar(h, True) & NumericalVar(n, 1)))),
-            LTLRule(NumericalVar(n, 2), ((BooleanVar(h, False) & (NumericalVar(n, 0) | NumericalVar(n, 1))) | (BooleanVar(h, True) & NumericalVar(n, 2))))
+        wanted_rules_0: list[SketchRule] = [
+            SketchRule([], [EPositive(h), ENEqual(n)]),
+            SketchRule([CGreater(n)], [ENegative(h), EDecr(n)])
         ]
 
-        self.assertEqual(wanted_ltl_0, fill_in_rules(arrow_sketch_0.rules, {n: 2}))
+
+        wanted_ltl_0 = [
+            LTLRule(NumericalVar(data=n, value=1), And(l=BooleanVar(data=h, value=False), r=NumericalVar(data=n, value=0))),
+             LTLRule(NumericalVar(data=n, value=2), And(l=BooleanVar(data=h, value=False), r=Or(l=NumericalVar(data=n, value=0), r=NumericalVar(data=n, value=1)))),
+             LTLRule(NumericalVar(data=n, value=0), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=0))),
+             LTLRule(NumericalVar(data=n, value=1), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=1))),
+             LTLRule(NumericalVar(data=n, value=2), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=2)))]
+
+        self.assertEqual(wanted_ltl_0, fill_in_rules(sketch, {n: 2}))
 
     def test_blocks_on(self):
         factory = self.get_factory("../../blocks_4_on/domain.pddl", "../../blocks_4_on/p-3-0.pddl")

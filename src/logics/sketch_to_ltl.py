@@ -3,19 +3,19 @@ import itertools
 
 from ..logics.rules import *
 
-
-def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+"""
+def fill_in_rule(rule2: SketchRule, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
     # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
     # TODO what to do with rules without effects
-    features: set[Feature] = rule.get_condition_features()   # Get only the features that are present in conditions or effects
+    features: set[Feature] = rule2.get_condition_features()   # Get only the features that are present in conditions or effects
                                                    # We do not need features that are not mentioned in conditions and are unchanged in the effects
-    for ef in rule.effects.get_atoms():
+    for ef in rule2.effects:
         match ef:
             case EBEqual(f): features.add(f)
             case NumericalEffect(f): features.add(f)
 
     options = {f: None for f in features}
-    condition_vars: set[Condition] = rule.conditions.get_atoms()
+    condition_vars: set[Condition] = set(rule2.conditions)
 
     for v in condition_vars:
         match v:
@@ -36,11 +36,15 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
 
     condition_combinations: list[dict[Feature, FeatureVar]] = [dict(zip(options.keys(), values)) for values in itertools.product(*options.values())]
 
-    effect_vars: set[Effect] = rule.effects.get_atoms()
+    effect_vars: set[Effect] = set(rule2.effects)
     new_rules = []
 
     for c_dict in condition_combinations:
-        new_effect = rule.effects
+        # new_effect = rule.effects
+        if not rule2.effects:
+            new_effect = Bottom
+        else:
+            new_effect = reduce(And, map(Var, rule2.effects))
         if len(c_dict) == 0:
             new_condition = Top()
         elif len(c_dict) == 1:
@@ -77,15 +81,16 @@ def fill_in_rule(rule: ArrowLTLRule, bounds: dict[dlplan.Numerical, int]) -> lis
     return new_rules
 
 
-def fill_in_rules(rules: list[ArrowLTLRule], bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
-    return [nr for r in rules for nr in fill_in_rule(r, bounds)]
+def fill_in_rules(sketch: Sketch, bounds: dict[dlplan.Numerical, int]) -> list[LTLRule]:
+    return [nr for r in sketch.rules for nr in fill_in_rule(r, bounds)]
+"""
 
-
+"""
 def dlplan_rule_to_tuple(rule: dlplan.Rule) -> RuleListRepr:
     return RuleListRepr([cond_from_dlplan(c) for c in rule.get_conditions()],
                          [[eff_from_dlplan(e) for e in rule.get_effects()]])
 
-
+"""
 def policy_to_rule_tuples(policy: dlplan.Policy) -> list[RuleListRepr]:
     """
     merged = list[RuleListRepr]()
