@@ -56,7 +56,7 @@ class SketchRule(Rule):
     def get_features(self) -> set[Feature]:
         return self.get_condition_features().union(self.get_effect_features())
 
-    def to_ltl(self, bounds: dict[dlplan.Numerical, int]) -> list['LTLRule']:
+    def to_ltl(self, bounds: dict[str, int]) -> list['LTLRule']:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
         # TODO what to do with rules without effects
         features: set[Feature] = self.get_condition_features()   # Get only the features that are present in conditions or effects
@@ -71,7 +71,7 @@ class SketchRule(Rule):
 
         for v in condition_vars:
             match v:
-                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f] + 1)]
+                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f.compute_repr()] + 1)]
                 case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
                 case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
                 case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
@@ -82,7 +82,7 @@ class SketchRule(Rule):
         for f in options:
             if not options[f]:
                 match f:
-                    case x if isinstance(x, dlplan.Numerical): options[f] = [NumericalVar(f, i) for i in range(0, bounds[f] + 1)]
+                    case x if isinstance(x, dlplan.Numerical): options[f] = [NumericalVar(f, i) for i in range(0, bounds[f.compute_repr()] + 1)]
                     case x if isinstance(x, dlplan.Boolean): options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
                     case _: print("something went wrong while filling in the feature values")        # TODO raise error
 
@@ -117,12 +117,12 @@ class SketchRule(Rule):
                         else:
                             new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
                     case EIncr(f):
-                        if bounds[f] - c_dict[f].value == 0:
+                        if bounds[f.compute_repr()] - c_dict[f].value == 0:
                             new_effect = Bottom()
-                        elif bounds[f] - c_dict[f].value <= 1:
-                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f]))
+                        elif bounds[f.compute_repr()] - c_dict[f].value <= 1:
+                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f.compute_repr()]))
                         else:
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
+                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f.compute_repr()] + 1))))
                     case ENEqual(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
                     case EBAny(f): raise NotImplementedError
                     case ENAny(f): raise NotImplementedError
