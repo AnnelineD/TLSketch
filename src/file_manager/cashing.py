@@ -1,3 +1,4 @@
+import json
 from os import path
 
 
@@ -8,11 +9,11 @@ def cache_to_file(filepath: str, serializer, deserializer, namer):
             if not path.isfile(filepath + filename):
                 res = f(*args, **kwargs)
                 with open(filepath + filename, "w") as file:
-                    file.write(serializer(res))
+                    json.dump(serializer(res), file)
                 return res
             else:
                 print("using cached")
                 with open(filepath + filename, "r") as file:
-                    return deserializer(file.read())
+                    return deserializer(json.load(file))
         return cached_f
     return wrapper
