@@ -19,7 +19,7 @@ def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
         case ltl.Or(p, q): return ltl_to_input(p) | ltl_to_input(q)
         case ltl.Next(p): return prop.x(ltl_to_input(p))
         case ltl.Until(p, q): return prop.u(ltl_to_input(p), ltl_to_input(q))
-        case ltl.Release(p, q): raise NotImplementedError(Release(p, q))
+        case ltl.Release(p, q): raise NotImplementedError(ltl.Release(p, q))
         case ltl.Then(p, q): return prop.imply(ltl_to_input(p), ltl_to_input(q))
         case ltl.Iff(p, q): return prop.iff(ltl_to_input(p), ltl_to_input(q))
         case ltl.Finally(p, bound):

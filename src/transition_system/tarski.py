@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from tarski.io import PDDLReader
 
 from .tarski_manipulation import sort_constants, get_ground_actions
+from .transition_system import TransitionSystem, StateStr
 from .types import *
 
 from src.transition_system.graph import DirectedGraph
+import src.file_manager as fm
 
 
 def load_domain(domain_file: str):
@@ -19,7 +21,7 @@ def load_instance(domain_file, instance_file):
     instance_reader.read_problem(domain_file, instance_file)
     return instance_reader.problem
 
-
+"""
 def load_domain_instance(domain_file, instance_file):
     domain_reader = PDDLReader()
     instance_reader = PDDLReader()
@@ -43,7 +45,7 @@ def from_instance(i_problem: TProblem) -> TarskiTransitionSystem:
         graph.add(s, s, "goal")
 
     return TarskiTransitionSystem(states, i_problem.init, goal_states, graph)
-
+"""
 
 def calc_goal_list(goal) -> list[tarski.syntax.Atom]:
     match goal:
@@ -98,3 +100,19 @@ def construct_graph(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
 
     return states, graph
 
+
+def tmodel_to_state(tmodel: TModel) -> StateStr:
+    return [str(a) for a in tmodel.as_atoms()]
+
+
+@fm.cashing.cache_to_file("cache/", fm.write.transition_system, fm.read.transition_system, fm.names.transition_system)
+def tarski_to_transition_system(instance_problem: TProblem) -> TransitionSystem:
+    tstates, graph = construct_graph(instance_problem)
+    goal_states: list[int] = calc_goal_states(tstates, instance_problem.goal)
+    # add self-loops in goals such that for infinite LTL, we can stay forever in a goal state
+    for s in goal_states:
+        graph.add(s, s, "goal")
+
+    states = [tmodel_to_state(s) for s in tstates]
+
+    return TransitionSystem(states, graph, tstates.index(instance_problem.init), goal_states)

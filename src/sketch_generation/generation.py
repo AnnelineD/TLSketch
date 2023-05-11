@@ -4,7 +4,7 @@ import examples
 import src.transition_system as ts
 from src.logics.rules import Feature
 from src.logics.conditions_effects import *
-from src.logics.rules import RuleListRepr
+# from src.logics.rules import RuleListRepr
 import itertools
 from typing import Generator, TypeVar, Callable
 from collections.abc import Iterator

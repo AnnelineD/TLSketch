@@ -6,8 +6,9 @@ from src.dlplan_utils import parse_features
 import json
 import dlplan
 
+from src.transition_system.transition_system import TransitionSystem
 
-# TODO make class for this???
+"""
 def transition_system(file_path) -> (DirectedGraph, int, list[int]):
     with open(file_path, "r") as f:
         data = json.load(f)
@@ -24,6 +25,15 @@ def dl_states(file_path: str, instance: dlplan.InstanceInfo) -> list[dlplan.Stat
     with open(file_path, "r") as sf:
         data = json.load(sf)
     return [dlplan.State(instance, [instance.get_atom(instance.get_atom_idx(str(a))) for a in state]) for state in data]
+"""
+
+
+def transition_system(data: dict) -> TransitionSystem:
+    assert("states" in data.keys())
+    assert("graph" in data.keys())
+    assert("init" in data.keys())
+    assert("goals" in data.keys())
+    return TransitionSystem(data["states"], data["graph"], data["init"], data["goals"])
 
 
 def feature_representations(file_path: str) -> list[str]:
