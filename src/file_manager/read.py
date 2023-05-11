@@ -1,7 +1,7 @@
 from typing import Union
 
 from src.sketch_verification.feature_instance import FeatureInstance
-from src.transition_system.graph import DirectedGraph
+# from src.transition_system.graph import DirectedGraph
 from src.dlplan_utils import parse_features
 import json
 import dlplan

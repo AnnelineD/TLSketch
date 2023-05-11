@@ -9,7 +9,7 @@ from src.transition_system.transition_system import TransitionSystem
 
 
 def transition_system(ts: TransitionSystem) -> dict:
-    return {"init": ts.init, "goal": ts.goals, "graph": ts.graph.adj, "states": ts.states}
+    return {"init": ts.init, "goals": ts.goals, "graph": ts.graph.adj, "states": ts.states}
 
 """
 def transition_system(graph: DirectedGraph, init: int, goal_states: list[int], file_path: str, override: bool = True):
