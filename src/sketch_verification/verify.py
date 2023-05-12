@@ -10,6 +10,12 @@ from ..sketch_verification import logic_translation
 def verify_sketch(sketch: Sketch, instance: FeatureInstance, abstract_laws: list[AbstractLaw]) -> bool:
     bounds = instance.get_bounds()
     ltl_sketch: LTLSketch = sketch.to_ltl(bounds)
+    # if instance.init in instance.goal_states:
+    #    return True
+    if not ltl_sketch.rules:
+        print("invalid rules")
+        return False
+    print("not invalid")
     laws = [law.expand(ltl_sketch.n_rules()) for law in abstract_laws]
     return verification(ltl_sketch, instance, laws)
 
