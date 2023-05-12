@@ -7,9 +7,10 @@ from .dlplan import DLTransitionModel
 from .types import *
 from .transition_system import StateStr
 
-
+"""
 def tarski_predicate_to_tuple(p: tarski.syntax.predicate.Predicate) -> tuple[str, int]:
     return p.name, len(p.sort)
+"""
 
 
 def dlvocab_from_tarski(domain_lan: tarski.fol.FirstOrderLanguage, add_goals=True) -> dlplan.VocabularyInfo:
@@ -54,11 +55,11 @@ def dlinstance_from_tarski(domain: tarski.fstrips.Problem, instance: tarski.fstr
     add_goal(goal)
     return i
 
-
+"""
 def tmodel_to_dlstate(tstate: TModel, i: dlplan.InstanceInfo) -> dlplan.State:
-    """function rewrites tarski states to dlplan states"""
+    "function rewrites tarski states to dlplan states"
     return dlplan.State(i, [i.get_atom(i.get_atom_idx(str(a))) for a in tstate.as_atoms()])
-
+"""
 """
 def tmodels_to_dlstates(states: list[TModel], i: dlplan.InstanceInfo) -> list[dlplan.State]:
     return [tmodel_to_dlstate(tstate, i) for tstate in states]

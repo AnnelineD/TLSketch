@@ -3,6 +3,7 @@ from dlplan import State as DLState
 from typing import Union
 
 from src.transition_system.graph import DirectedGraph
+from src.transition_system.transition_system import StateStr
 
 Feature = Union[dlplan.Boolean, dlplan.Numerical]
 
@@ -43,6 +44,9 @@ def eval_feature(feature, states: set[DLState]) -> dict[DLState, Feature]:
 def eval_features(features: list[Feature], states: list[DLState]) -> dict[Feature, dict[DLState, any]]:
     return {f: {s: f.evaluate(s) for s in states} for f in features}
 
+
+def dlstate_from_state(state: StateStr, instance: dlplan.InstanceInfo) -> DLState:
+    return dlplan.State(instance, [instance.get_atom(instance.get_atom_idx(atom)) for atom in state])
 
 
 

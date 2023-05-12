@@ -105,7 +105,7 @@ def tmodel_to_state(tmodel: TModel) -> StateStr:
     return [str(a) for a in tmodel.as_atoms()]
 
 
-@fm.cashing.cache_to_file("cache/", fm.write.transition_system, fm.read.transition_system, fm.names.transition_system)
+@fm.cashing.cache_to_file("../../cache/", fm.write.transition_system, fm.read.transition_system, fm.names.transition_system)
 def tarski_to_transition_system(instance_problem: TProblem) -> TransitionSystem:
     tstates, graph = construct_graph(instance_problem)
     goal_states: list[int] = calc_goal_states(tstates, instance_problem.goal)
