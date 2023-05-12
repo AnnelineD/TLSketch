@@ -1,5 +1,6 @@
 import itertools
-from collections import namedtuple
+#from collections import namedtuple
+from dataclasses import dataclass
 from functools import reduce
 
 from ltl import *
@@ -8,23 +9,28 @@ from ..logics.conditions_effects import *
 from ..logics.feature_vars import *
 
 
-Rule = namedtuple("Rule", "conditions effects")
+#Rule = namedtuple("Rule", "conditions effects")
+
+class Rule:
+    conditions: 'C'
+    effects: 'E'
+
 
 
 class LTLRule(Rule):
     conditions: LTLFormula  # with vars of type FeatureVar
     effects: LTLFormula     # with vars of type FeatureVar
 
-    def __new__(cls, c: LTLFormula, e: LTLFormula):
-        self = super(LTLRule, cls).__new__(cls, c, e)
+    def __init__(self, c: LTLFormula, e: LTLFormula):
         for v in c.get_vars():
             assert isinstance(v, FeatureVar)
         for v in e.get_vars():
             assert isinstance(v, FeatureVar)
 
-        return self
+        self.conditions = c
+        self.effects = e
 
-    def show(self) -> str:
+    def __str__(self) -> str:
         return f"conditions: {self.conditions.show()}    effects: {self.effects.show()}"
 
 
@@ -38,6 +44,7 @@ class LTLSketch:
         return len(self.rules)
 
 
+@dataclass
 class SketchRule(Rule):
     conditions: list[Condition]
     effects: list[Effect]
@@ -47,8 +54,12 @@ class SketchRule(Rule):
         return SketchRule([cond_from_dlplan(c) for c in rule.get_conditions()],
                           [eff_from_dlplan(e) for e in rule.get_effects()])
 
+    @classmethod
+    def from_tuple(cls, tup: tuple[list[Condition], list[Effect]]):
+        return cls(tup[0], tup[1])
+
     def get_condition_features(self) -> set[Feature]:
-        return {c.feature for c in self.conditions}
+        return {c.feature for c in self.conditions if not isinstance(c, CNAny) or isinstance(c, CBAny)}
 
     def get_effect_features(self) -> set[Feature]:
         return {e.feature for e in self.effects}
@@ -58,7 +69,8 @@ class SketchRule(Rule):
 
     def to_ltl(self, bounds: dict[str, int]) -> list['LTLRule']:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
-        # TODO what to do with rules without effects
+        # TODO what to do with rules without effects -> can't exist
+        assert(len(self.effects) > 0)
         features: set[Feature] = self.get_condition_features()   # Get only the features that are present in conditions or effects
         # We do not need features that are not mentioned in conditions and are unchanged in the effects
         for ef in self.effects:
@@ -71,7 +83,7 @@ class SketchRule(Rule):
 
         for v in condition_vars:
             match v:
-                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f.compute_repr()] + 1)]
+                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f] + 1)]
                 case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
                 case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
                 case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
@@ -82,13 +94,14 @@ class SketchRule(Rule):
         for f in options:
             if not options[f]:
                 match f:
-                    case x if isinstance(x, dlplan.Numerical): options[f] = [NumericalVar(f, i) for i in range(0, bounds[f.compute_repr()] + 1)]
-                    case x if isinstance(x, dlplan.Boolean): options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
+                    case x if x.startswith("n_"): options[f] = [NumericalVar(f, i) for i in range(0, bounds[x] + 1)]
+                    case x if x.startswith("b_"): options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
                     case _: print("something went wrong while filling in the feature values")        # TODO raise error
 
         condition_combinations: list[dict[Feature, FeatureVar]] = [dict(zip(options.keys(), values)) for values in itertools.product(*options.values())]
 
-        effect_vars: set[Effect] = set(self.effects)
+        effect_vars: set[Effect] = set(e for e in self.effects if not (isinstance(e, EBAny) or isinstance(e, ENAny)))
+        # print("effects", effect_vars)
         new_rules = []
 
         for c_dict in condition_combinations:
@@ -96,7 +109,7 @@ class SketchRule(Rule):
             if not self.effects:
                 new_effect = Bottom
             else:
-                new_effect = reduce(And, map(Var, self.effects))
+                new_effect = reduce(And, map(Var, effect_vars))
             if len(c_dict) == 0:
                 new_condition = Top()
             elif len(c_dict) == 1:
@@ -111,28 +124,30 @@ class SketchRule(Rule):
                     case EBEqual(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))
                     case EDecr(f):
                         if c_dict[f].value == 0:
-                            new_effect = Bottom()
+                            new_effect = Bottom()  # The effect is impossible to reach because the feature cannot decrease anymore
                         elif c_dict[f].value == 1:
                             new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
                         else:
                             new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
                     case EIncr(f):
-                        if bounds[f.compute_repr()] - c_dict[f].value == 0:
-                            new_effect = Bottom()
-                        elif bounds[f.compute_repr()] - c_dict[f].value <= 1:
-                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f.compute_repr()]))
+                        if bounds[f] - c_dict[f].value == 0:
+                            new_effect = Bottom()  # The effect is impossible to reach because the feature cannot increase anymore
+                        elif bounds[f] - c_dict[f].value <= 1:
+                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f]))
                         else:
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f.compute_repr()] + 1))))
+                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
                     case ENEqual(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
                     case EBAny(f): raise NotImplementedError
                     case ENAny(f): raise NotImplementedError
             # if LTLRule(new_condition, new_effect) not in
             if not new_effect == Bottom():
+                # print("c:", new_condition, "e: ", new_effect)
                 new_rules.append(LTLRule(new_condition, new_effect))
-
+        # print("new_rules", *new_rules)
         return new_rules
 
 
+@dataclass
 class Sketch:
     rules: list[SketchRule]
 
@@ -142,6 +157,10 @@ class Sketch:
     @classmethod
     def from_policy(cls, policy: dlplan.Policy):
         return Sketch([SketchRule.from_dlplan_rule(r) for r in policy.get_rules()])
+
+    @classmethod
+    def from_tuple(cls, tup: tuple[SketchRule]):
+        return cls(list(tup))
 
     def to_ltl(self, bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
         return LTLSketch([nr for r in self.rules for nr in r.to_ltl(bounds)])
