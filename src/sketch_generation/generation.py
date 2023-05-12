@@ -2,24 +2,14 @@ import dlplan
 
 import examples
 import src.transition_system as ts
-from src.logics.rules import Feature
+from src.logics.rules import Feature, SketchRule, Sketch
 from src.logics.conditions_effects import *
 # from src.logics.rules import RuleListRepr
 import itertools
 from typing import Generator, TypeVar, Callable
 from collections.abc import Iterator
 
-"""
-class SketchRule:
-    features: list[Feature]
-    conditions: list[Condition]
-    effects: list[Effect]
 
-    def __init__(self, features, conditions, effects):
-        self.features = features
-        self.conditions = conditions
-        self.effects = effects
-"""
 
 # method from Drexler code
 def construct_feature_generator():
@@ -42,7 +32,7 @@ def construct_feature_generator():
     feature_generator.set_generate_transitive_reflexive_closure_role(False)
     return feature_generator
 
-
+"""
 def generate_features(vocab: dlplan.VocabularyInfo, states: list[dlplan.State]) -> (list[dlplan.Boolean], list[dlplan.Numerical]):
     generator = construct_feature_generator()
     factory = dlplan.SyntacticElementFactory(vocab)
@@ -51,25 +41,28 @@ def generate_features(vocab: dlplan.VocabularyInfo, states: list[dlplan.State]) 
     numerical_features = [factory.parse_numerical(f) for f in string_features if f.startswith("n_")]
 
     return boolean_features, numerical_features
+"""
 
 
-def get_feature_sets(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], size=3) -> Iterator[(tuple[dlplan.Boolean, ...], tuple[dlplan.Numerical, ...])]:
+def get_feature_sets(boolean_features: list[str], numerical_features: list[str], size=3) -> Iterator[(tuple[Boolean, ...], tuple[Numerical, ...])]:
     for i in range(0, size + 1):
         j = size - i
-        yield from itertools.product(itertools.combinations(boolean_features, i), itertools.combinations(numerical_features, j))
+        yield from itertools.product(
+            itertools.combinations(boolean_features, i),
+            itertools.combinations(numerical_features, j))
 
 
-def possible_conditions(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical]) -> Generator[list[Condition], None, None]:
+def possible_conditions(boolean_features: list[Boolean], numerical_features: list[Numerical]) -> Generator[list[Condition], None, None]:
     n_features: int = len(boolean_features) + len(numerical_features)
     possible_conditions = itertools.product([0, 1, 2], repeat=n_features)      # ((0, 0, 0, 0), (0, 0, 0, 1), (1, 2, 0, 0), ....)
 
-    def convert_num_condition(i: int, f: dlplan.Numerical) -> NumericalCondition:
+    def convert_num_condition(i: int, f: str) -> NumericalCondition:
         match i:
             case 0: return CNAny(f)
             case 1: return CZero(f)
             case 2: return CGreater(f)
 
-    def convert_bool_condition(i: int, f: dlplan.Boolean) -> BooleanCondition:
+    def convert_bool_condition(i: int, f: str) -> BooleanCondition:
         match i:
             case 0: return CBAny(f)
             case 1: return CNegative(f)
@@ -83,14 +76,18 @@ def possible_conditions(boolean_features: list[dlplan.Boolean], numerical_featur
 def possible_effects(condition: list[Condition]) -> Iterator[list[Effect]]:
     def match_c(c):
         match c:
-            case CZero(x): return [ENAny(x), EIncr(x), ENEqual(x)]
-            case CGreater(x): return [ENAny(x), EIncr(x), EDecr(x), ENEqual(x)]
-            case CNAny(x): return [ENAny(x), EIncr(x), EDecr(x), ENEqual(x)]
-            case CNegative(x): return [EBAny(x), EPositive(x), EBEqual(x)]
-            case CPositive(x): return [EBAny(x), ENegative(x), EBEqual(x)]
-            case CBAny(x): return [EBAny(x), EPositive(x), ENegative(x), EBEqual(x)]
+            case CZero(x): return [EIncr(x), ENEqual(x), ENAny(x)]
+            case CGreater(x): return [EIncr(x), EDecr(x), ENEqual(x), ENAny(x)]
+            case CNAny(x): return [EIncr(x), EDecr(x), ENEqual(x), ENAny(x)]
+            case CNegative(x): return [EPositive(x), EBEqual(x), EBAny(x)]
+            case CPositive(x): return [ENegative(x), EBEqual(x), EBAny(x)]
+            case CBAny(x): return [EPositive(x), ENegative(x), EBEqual(x), EBAny(x)]
 
-    yield from filter(lambda es: not all([(isinstance(ef, ENAny) | isinstance(ef, EBAny)) for ef in es]), itertools.product(*[match_c(c) for c in condition]))
+    print(len(condition))
+    for es in itertools.product(*map(match_c, condition)):
+        if not all(isinstance(ef, ENAny) or isinstance(ef, EBAny) for ef in es):
+            yield es
+            #print("returned")
 
 
 A = TypeVar('A')
@@ -112,24 +109,34 @@ def all_combinations(it: Iterator[C], n: int) -> Iterator[tuple[C, ...]]:
     :param n:
     :return: tuples of length <= n
     """
-    for i, itn in enumerate(itertools.tee(it, n)):
-        yield from itertools.combinations(itn, i+1)
+    yield from itertools.combinations(it, 1)
+    #for i, itn in enumerate(itertools.tee(it, n)):
+    #    yield from itertools.combinations(itn, i+1)
 
 
-def generate_rules(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical]) -> Iterator[tuple[list[Condition], list[Effect]]]:
+def generate_rules(boolean_features: list[str], numerical_features: list[str]) -> Iterator[SketchRule]:
+    print("in generate rules")
     cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
+    print("got cs")
+    #nc = next(cs)
+    #ne = next(possible_effects(nc))
+    #rs: Iterator[tuple[list[Condition], list[Effect]]] = iter([(nc, ne)])
     rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
-    return rs
+    print("got rs")
+    return map(SketchRule.from_tuple, rs)
 
 
-def generate_sketches(boolean_features: list[dlplan.Boolean], numerical_features: list[dlplan.Numerical], max_rules=4) -> Iterator[tuple[tuple[list[Condition], list[Effect]], ...]]:
-    cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
-    rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
-    return all_combinations(rs, max_rules)
+def generate_sketches(boolean_features: list[str], numerical_features: list[str], max_rules=3, max_features=3) -> Iterator[Sketch]:
+    print("in generate sketches")
+    fsets = get_feature_sets(boolean_features, numerical_features, max_features)  # TODO also sets of size < max_features
+    for bfs, nfs in fsets:
+        rs = generate_rules(bfs, nfs)
+        print("got rs here")
+        rs_combs = all_combinations(rs, max_rules)
+        print("got rs combs")
+        yield from map(Sketch.from_tuple, rs_combs)
+    # return map(Sketch.from_tuple, rs_combs)
 
-
-def generate_sketches_from_rules(rs: Iterator[tuple[list[Condition], list[Effect]]], max_rules=4) -> Iterator[tuple[tuple[list[Condition], list[Effect]], ...]]:
-    return all_combinations(rs, max_rules)
 
 
 
