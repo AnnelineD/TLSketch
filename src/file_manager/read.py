@@ -6,6 +6,7 @@ from src.dlplan_utils import parse_features
 import json
 import dlplan
 
+from src.transition_system.graph import DirectedGraph
 from src.transition_system.transition_system import TransitionSystem
 
 """
@@ -33,9 +34,10 @@ def transition_system(data: dict) -> TransitionSystem:
     assert("graph" in data.keys())
     assert("init" in data.keys())
     assert("goals" in data.keys())
-    return TransitionSystem(data["states"], data["graph"], data["init"], data["goals"])
+    graph = DirectedGraph(data["graph"])
+    return TransitionSystem(data["states"], graph, data["init"], data["goals"])
 
-
+"""
 def feature_representations(file_path: str) -> list[str]:
     with open(file_path, "r") as f:
         data = json.load(f)
@@ -45,7 +47,7 @@ def feature_representations(file_path: str) -> list[str]:
 def features(file_path: str, factory: dlplan.SyntacticElementFactory) -> (list[dlplan.Boolean], list[dlplan.Numerical]):
     feature_reps = feature_representations(file_path)
     return parse_features(feature_reps, factory)
-
+"""
 
 def feature_valuations(file_path: str) -> dict[str, Union[list[int], list[bool]]]:
     with open(file_path, "r") as f:
