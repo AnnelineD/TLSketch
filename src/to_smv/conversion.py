@@ -52,8 +52,8 @@ def ltl_to_smv(ltl: LTLFormula) -> str:
     match ltl:
         case Top(): return "TRUE"
         case Bottom(): return "FALSE"
-        case BooleanVar(f, v): return f"{repr_feature_str(f.compute_repr())}={str(v).upper()}"
-        case NumericalVar(f, v): return f"{repr_feature_str(f.compute_repr())}={str(v).upper()}"
+        case BooleanVar(f, v): return f"{repr_feature_str(f)}={str(v).upper()}"
+        case NumericalVar(f, v): return f"{repr_feature_str(f)}={str(v).upper()}"
         case Var(s) as x: return f"{s}"  # TODO make a special goal var
         case Not(p): return f"!{ltl_to_smv(p)}"
         case And(p, q): return f"({ltl_to_smv(p)} & {ltl_to_smv(q)})"
