@@ -3,7 +3,11 @@ from typing import Union
 import dlplan
 from dataclasses import dataclass
 
-Feature = Union[dlplan.Boolean, dlplan.Numerical]
+
+Numerical = str
+Boolean = str
+
+Feature = Union[Boolean, Numerical]
 
 
 class Condition:
@@ -17,7 +21,7 @@ class Condition:
             case CZero(nf): return CGreater(nf)
 
     def show(self, feature_repr: dict[Feature, str] = None):
-        r = self.feature.get_index() if not feature_repr else feature_repr[self.feature]
+        r = self.feature.name if not feature_repr else feature_repr[self.feature]
         match self:
             case CPositive(bf):f"b{r}"
             case CNegative(bf): return f"¬b{r}"
@@ -67,22 +71,22 @@ def eff_from_dlplan(e: dlplan.BaseEffect) -> Effect:
 
 @dataclass(frozen=True, eq=True)
 class BooleanCondition(Condition):
-    feature: dlplan.Boolean
+    feature: Boolean
 
 
 @dataclass(frozen=True, eq=True)
 class NumericalCondition(Condition):
-    feature: dlplan.Numerical
+    feature: Numerical
 
 
 @dataclass(frozen=True, eq=True)
 class BooleanEffect(Effect):
-    feature: dlplan.Boolean
+    feature: Boolean
 
 
 @dataclass(frozen=True, eq=True)
 class NumericalEffect(Effect):
-    feature: dlplan.Numerical
+    feature: Numerical
 
 
 @dataclass(frozen=True, eq=True)
