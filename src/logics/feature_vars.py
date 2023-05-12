@@ -13,11 +13,11 @@ class FeatureVar(Var):
 
 @dataclass(frozen=True, eq=True)
 class NumericalVar(FeatureVar):
-    data: dlplan.Numerical
+    data: str
     value: int
 
     def var_show(self) -> str:
-        return f"n{self.data.get_index()}={self.value}"
+        return f"{self.data}={self.value}"
 
 
 @dataclass(frozen=True, eq=True)
