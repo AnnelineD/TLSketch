@@ -79,9 +79,8 @@ import json
 #         self.assertEqual(data, [self.b1, self.n1])
 
 
-
-from src.logics.conditions_effects import CGreater, ENAny
-from src.logics.rules import SketchRule
+from src.logics.conditions_effects import CGreater, ENAny, CPositive, ENegative
+from src.logics.rules import SketchRule, Sketch
 
 
 class SketchSavingTest(unittest.TestCase):
@@ -91,6 +90,15 @@ class SketchSavingTest(unittest.TestCase):
         deserialized = SketchRule.deserialize(serialized)
 
         self.assertEqual(sr, deserialized)
+
+    def test_sketch(self):
+        sketch = Sketch([SketchRule([CGreater("f1")], [ENAny("f2")]),
+                         SketchRule([CPositive("f3")], [ENegative("f4")])])
+
+        serialized = sketch.serialize()
+        deserialized = Sketch.deserialize(serialized)
+
+        self.assertEqual(sketch, deserialized)
 
 
 if __name__ == '__main__':

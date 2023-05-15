@@ -172,5 +172,12 @@ class Sketch:
     def to_ltl(self, bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
         return LTLSketch([nr for r in self.rules for nr in r.to_ltl(bounds)])
 
+    def serialize(self):
+        return [r.serialize() for r in self.rules]
+
+    @classmethod
+    def deserialize(cls, rs: list):
+        return Sketch([SketchRule.deserialize(r) for r in rs])
+
 
 
