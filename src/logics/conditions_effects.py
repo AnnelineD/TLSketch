@@ -10,6 +10,7 @@ Boolean = str
 Feature = Union[Boolean, Numerical]
 
 
+@dataclass(frozen=True)
 class Condition:
     feature: Feature
 
@@ -41,6 +42,7 @@ def cond_from_dlplan(c: dlplan.BaseCondition) -> Condition:
         case _: return "invalid"  # TODO raise error
 
 
+@dataclass(frozen=True)
 class Effect:
     feature: any
 
