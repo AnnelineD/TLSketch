@@ -14,3 +14,16 @@ class TransitionSystem:
         self.graph = graph
         self.init = init
         self.goals = goals
+
+    @classmethod
+    def deserialize(cls, data: dict):
+        assert("states" in data.keys())
+        assert("graph" in data.keys())
+        assert("init" in data.keys())
+        assert("goals" in data.keys())
+        graph = DirectedGraph(data["graph"])
+        return cls(data["states"], graph, data["init"], data["goals"])
+
+    def serialize(self) -> dict:
+        return {"init": self.init, "goals": self.goals, "graph": self.graph.adj, "states": self.states}
+

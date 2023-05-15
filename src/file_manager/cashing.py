@@ -1,4 +1,5 @@
 import json
+import os
 from os import path
 
 
@@ -8,6 +9,9 @@ def cache_to_file(filepath: str, serializer, deserializer, namer):
             filename = namer(*args, **kwargs)
             if not path.isfile(filepath + filename):
                 res = f(*args, **kwargs)
+                if not path.exists(path.dirname(filepath + filename)):
+                    print(filepath + filename)
+                    os.makedirs(path.dirname(filepath + filename))
                 with open(filepath + filename, "w") as file:
                     json.dump(serializer(res), file)
                 return res

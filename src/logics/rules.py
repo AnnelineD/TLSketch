@@ -58,6 +58,13 @@ class SketchRule(Rule):
     def from_tuple(cls, tup: tuple[list[Condition], list[Effect]]):
         return cls(tup[0], tup[1])
 
+    @classmethod
+    def deserialize(cls, sr: tuple[list[str], list[str]]):
+        return cls(list(map(eval, sr[0])), list(map(eval, sr[1])))
+
+    def serialize(self) -> tuple[list[str], list[str]]:
+        return list(map(str, self.conditions)), list(map(str, self.effects))
+
     def get_condition_features(self) -> set[Feature]:
         return {c.feature for c in self.conditions if not isinstance(c, CNAny) or isinstance(c, CBAny)}
 
