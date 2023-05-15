@@ -45,10 +45,3 @@ def check_file(filepath: str, laws: list[Law]):
     pynusmv.init.deinit_nusmv()
     return True
 
-
-"""
-def main():
-    for s in sketches:
-        for i in instances:
-            verify_sketch(sketch, i, laws)
-"""

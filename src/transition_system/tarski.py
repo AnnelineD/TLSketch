@@ -21,31 +21,6 @@ def load_instance(domain_file, instance_file):
     instance_reader.read_problem(domain_file, instance_file)
     return instance_reader.problem
 
-"""
-def load_domain_instance(domain_file, instance_file):
-    domain_reader = PDDLReader()
-    instance_reader = PDDLReader()
-    domain_reader.parse_domain(domain_file)
-    instance_reader.read_problem(domain_file, instance_file)
-    return domain_reader.problem, instance_reader.problem
-
-
-@dataclass
-class TarskiTransitionSystem:
-    states: list[TModel]
-    init: TModel    # TODO make int
-    goal_states: list[int]
-    graph: DirectedGraph
-
-
-def from_instance(i_problem: TProblem) -> TarskiTransitionSystem:
-    states, graph = construct_graph(i_problem)
-    goal_states: list[int] = calc_goal_states(states, i_problem.goal)
-    for s in goal_states:
-        graph.add(s, s, "goal")
-
-    return TarskiTransitionSystem(states, i_problem.init, goal_states, graph)
-"""
 
 def calc_goal_list(goal) -> list[tarski.syntax.Atom]:
     match goal:
