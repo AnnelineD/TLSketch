@@ -18,8 +18,8 @@ from src.sketch_generation.generation import generate_sketches, get_feature_sets
     generate_rules, generate_sketches_from_rules
 from src.to_smv.conversion import *
 from src.to_smv.make_smv import to_smv_format
-from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules, list_to_ruletups, \
-    ruletups_to_arrowsketch
+#from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules, list_to_ruletups, \
+#    ruletups_to_arrowsketch
 from src.logics.formula_generation import FormulaGenerator
 from src.model_check.model_check import check_file, model_check_sketch
 import src.file_manager as fm
@@ -112,7 +112,7 @@ def print_ltl():
 
 def test_pysmv():
     pynusmv.init.init_nusmv()
-    pynusmv.glob.load_from_file("blocks_clear_0.smv")
+    pynusmv.glob.load_from_file("test/sketch_verification/blocks_clear_0.smv")
     pynusmv.glob.compute_model()
     spec = pynusmv.prop.x(pynusmv.prop.atom("state = s2"))
     for p in pynusmv.glob.prop_database():
@@ -191,7 +191,7 @@ def model_check_sketches_():
 
 
 def model_check_sketches_bis():
-    domain = Gripper()
+    domain = BlocksClear()
     directory = "smvs/"
     filename = "gripper.smv"
     generator = construct_feature_generator()
@@ -384,74 +384,6 @@ def make_instance_smvs(directory, features):
             f.write(smv_format)
 
 
-def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
-    from pynusmv import prop
-    match f:
-        case Top(): return prop.true()
-        case Bottom(): return prop.false()
-        case BooleanVar(f, v): return prop.atom(f"{repr_feature(f)}={str(v).upper()}")
-        case NumericalVar(f, v): return prop.atom(f"{repr_feature(f)}={str(v).upper()}")
-        case Var(s) as x: return prop.atom(f"{s}")  # TODO make a special goal var
-        case Not(p): return prop.not_(ltl_to_input(p))
-        case And(p, q): return ltl_to_input(p) & ltl_to_input(q)
-        case Or(p, q): return ltl_to_input(p) | ltl_to_input(q)
-        case Next(p): return prop.x(ltl_to_input(p))
-        case Until(p, q): return prop.u(ltl_to_input(p), ltl_to_input(q))
-        case Release(p, q): raise NotImplementedError(Release(p, q))
-        case Then(p, q): return prop.imply(ltl_to_input(p), ltl_to_input(q))
-        case Iff(p, q): return prop.iff(ltl_to_input(p), ltl_to_input(q))
-        case Finally(p, bound):
-            if not bound: return prop.f(ltl_to_input(p))
-            else:
-                s, e = bound
-                raise NotImplementedError("bound")
-        case Globally(p): return prop.g(ltl_to_input(p))
-        case Weak(p, q):  # = Release(q, Or(p, q))
-            raise NotImplementedError("weak")
-        case Strong(p, q):  # = Until(q, And(p, q))
-            raise NotImplementedError("strong")
-        case Previous(p):
-            spec = ltl_to_input(p)
-            s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_PREC, spec._ptr, None), freeit=False)
-            s._car = spec
-            return s
-        case Once(p, bound):
-            if not bound:
-                spec = ltl_to_input(p)
-                s = prop.Spec(pynusmv.node.nsnode.find_node(pynusmv.parser.nsparser.OP_ONCE, spec._ptr, None), freeit=False)
-                s._car = spec
-                return s
-            else:
-                s, e = bound
-                raise NotImplementedError("strong")
-
-        case _: raise NotImplementedError(ltl)
-
-
-def ctl_to_input(f: ctl.CTLFormula) -> pynusmv.prop.Spec:
-    from pynusmv import prop
-    match f:
-        case ctl.Top(): return prop.true()
-        case ctl.Bottom(): return prop.false()
-        case ctl.Var(s) as x: return prop.atom(f"{s}")  # TODO make a special goal var
-        case ctl.Not(p): return prop.not_(ctl_to_input(p))
-        case ctl.And(p, q): return ctl_to_input(p) & ctl_to_input(q)
-        case ctl.Or(p, q): return ctl_to_input(p) | ctl_to_input(q)
-        case ctl.EX(p): return prop.ex(ctl_to_input(p))
-        case ctl.AX(p): return prop.ax(ctl_to_input(p))
-        case ctl.Then(p, q): return prop.imply(ctl_to_input(p), ctl_to_input(q))
-        case ctl.Iff(p, q): return prop.iff(ctl_to_input(p), ctl_to_input(q))
-        case ctl.EF(p, bound):
-            if not bound: return prop.ef(ctl_to_input(p))
-            else: NotImplementedError(f)
-        case ctl.AF(p, bound):
-            if not bound: return prop.af(ctl_to_input(p))
-            else: NotImplementedError(f)
-        case ctl.EG(p): return prop.eg(ctl_to_input(p))
-        case ctl.AG(p): return prop.ag(ctl_to_input(p))
-        case _: raise NotImplementedError(f)
-
-
 def model_check_from_files(directory):
     domain_file = f"{directory}/domain.pddl"
     instance_names = get_instance_names(directory)
@@ -587,16 +519,20 @@ def main_write_transition_sys(domain):
 
 
 if __name__ == '__main__':
+    instance = ts.tarski.load_instance("gripper/domain.pddl", "gripper/p-1-0.pddl")
+    print(instance.name)
+
     # main_write_transition_sys("childsnack")
     # write_smvs("blocks_4_clear")
 
 
+    """
     sketches = list(model_check_from_files("gripper_test"))
     for s in sketches:
         print(s.show())
 
     print()
-    """
+    
     sketches_ = list(model_check_sketches_bis())
     for s in sketches_:
         print(s.show())
