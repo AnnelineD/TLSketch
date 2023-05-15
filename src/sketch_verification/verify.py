@@ -13,9 +13,7 @@ def verify_sketch(sketch: Sketch, instance: FeatureInstance, abstract_laws: list
     # if instance.init in instance.goal_states:
     #    return True
     if not ltl_sketch.rules:
-        print("invalid rules")
         return False
-    print("not invalid")
     laws = [law.expand(ltl_sketch.n_rules()) for law in abstract_laws]
     return verification(ltl_sketch, instance, laws)
 

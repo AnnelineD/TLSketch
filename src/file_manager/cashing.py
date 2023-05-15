@@ -12,7 +12,7 @@ def cache_to_file(filepath: str, serializer, deserializer, namer):
                     json.dump(serializer(res), file)
                 return res
             else:
-                print("using cached")
+                # print("using cached")
                 with open(filepath + filename, "r") as file:
                     return deserializer(json.load(file))
         return cached_f
