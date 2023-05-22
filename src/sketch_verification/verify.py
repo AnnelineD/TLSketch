@@ -31,6 +31,9 @@ def check_file(filepath: str, laws: list[Law]):
     pynusmv.glob.compute_model()
     fsm = pynusmv.glob.prop_database().master.bddFsm
 
+    from pynusmv.mc import explain, eval_ctl_spec
+
+
     for l in laws:
         match l.formula:
             case f if isinstance(f, CTLFormula):
@@ -38,7 +41,9 @@ def check_file(filepath: str, laws: list[Law]):
                     pynusmv.init.deinit_nusmv()
                     return False
             case f if isinstance(f, LTLFormula):
-                if pynusmv.mc.check_ltl_spec(logic_translation.ltl_to_input(l.formula)) != l.truth:
+                truth, expl = pynusmv.mc.check_explain_ltl_spec(logic_translation.ltl_to_input(l.formula))
+                if truth != l.truth:
+                    print(expl)
                     pynusmv.init.deinit_nusmv()
                     return False
 

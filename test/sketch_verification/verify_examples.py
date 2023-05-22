@@ -1,5 +1,6 @@
 import unittest
 from functools import reduce
+from typing import Union
 
 import ctl
 import ltl
@@ -7,6 +8,7 @@ import ltl
 from src.logics.laws import AbstractLaw
 from src.logics.rules import Sketch
 from src.sketch_verification.feature_instance import FeatureInstance
+from src.sketch_verification.laws import simple_law, exists_simple_law, impl_law, exists_impl_law
 from src.sketch_verification.verify import verify_sketch
 from examples import *
 import src.file_manager as fm
@@ -49,19 +51,39 @@ class VerifyExamples(unittest.TestCase):
         self.law2 = AbstractLaw(ctl_rule_cannot_lead_into_dead, True)
         self.law3 = AbstractLaw(rules_followed_then_goal, True)
 
-    def verify_existing_sketch(self, domain):
+    def verify_existing_sketch(self, domain, sketch_n):
         print("yes")
-        policy = domain.sketch_2()
+        policy = domain.sketches()[sketch_n]
         sketch = Sketch.from_policy(policy)
         features = policy.get_boolean_features() + policy.get_numerical_features()
-        feature_vals = {f.compute_repr(): [f.evaluate(s) for s in domain.dl_system.states] for f in features}
-        print(feature_vals)
-        instance = FeatureInstance(domain.dl_system.graph, domain.dl_system.initial_state, domain.dl_system.goal_states, feature_vals)
+        feature_vals: dict[str, list[Union[bool, int]]] = {f.compute_repr(): [f.evaluate(s) for s in domain.dl_states] for f in features}
+        # print(feature_vals)
+        instance = FeatureInstance(domain.transition_system.graph, domain.transition_system.init, domain.transition_system.goals, feature_vals)
 
-        self.assertTrue(verify_sketch(sketch, instance, [self.law1, self.law2, self.law3]))
+        print(impl_law.expand(2).formula.show())
+        self.assertTrue(verify_sketch(sketch, instance, [impl_law, exists_impl_law]))
 
-    def test_verify_existing_sketch(self):
-        self.verify_existing_sketch(BlocksClear())
+    def test_verify_Gripper(self):
+        self.verify_existing_sketch(Gripper(), 2)
+        self.verify_existing_sketch(Gripper(), 1)
+        # self.verify_existing_sketch(Gripper(), 0)
+
+    def test_verify_Blocks_on(self):
+        self.verify_existing_sketch(BlocksOn(), 2)
+        self.verify_existing_sketch(BlocksOn(), 1)
+        # self.verify_existing_sketch(BlocksOn(), 0)
+
+    def test_verify_blocks_clear(self):
+        self.verify_existing_sketch(BlocksClear(), 2)
+        self.verify_existing_sketch(BlocksClear(), 1)
+        # self.verify_existing_sketch(BlocksClear(), 0)
+
+    def test_verify_miconic(self):
+        self.verify_existing_sketch(Miconic(), 2)
+        self.verify_existing_sketch(Miconic(), 1)
+
+    def test_verify_childsnack(self):
+        self.verify_existing_sketch(Childsnack(), 1)
 
 
 if __name__ == '__main__':

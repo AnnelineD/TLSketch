@@ -12,18 +12,21 @@ from tqdm import tqdm
 
 import src.transition_system.tarski
 from examples import *
-from src.logics.conditions_effects import Condition, Effect
-from src.logics.rules import LTLSketch
-from src.sketch_generation.generation import generate_sketches, get_feature_sets, construct_feature_generator, \
-    generate_rules, generate_sketches_from_rules
+from src.logics.conditions_effects import Condition, Effect, CNAny, EIncr, EDecr, ENEqual
+from src.logics.rules import LTLSketch, Sketch, SketchRule
+
+from src.sketch_verification import verify_sketch, law1, law2, law3
+from src.sketch_verification.feature_instance import FeatureInstance
+from src.sketch_verification.laws import law_test, exists, if_followed_next_law, simple_law
+from src.sketch_verification.verify import check_file
 from src.to_smv.conversion import *
 from src.to_smv.make_smv import to_smv_format
 #from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules, list_to_ruletups, \
 #    ruletups_to_arrowsketch
-from src.logics.formula_generation import FormulaGenerator
-from src.model_check.model_check import check_file, model_check_sketch
+
 import src.file_manager as fm
 from src.dlplan_utils import parse_features
+from src.transition_system.transition_system import TransitionSystem
 
 
 def show_domain_info():
@@ -67,47 +70,9 @@ def main():
     for r in ltl_rules:
         print(r.show())
 
-def make_smv():
-    domain = BlocksOn()
-    filename = "blocks_on_2.smv"
-    print(domain.dl_system().graph.show())
-    print(domain.dl_system().states)
-    print(domain.dl_system().goal_states)
-    print(domain.dl_system().instance_info.get_static_atoms())
-    sketch = domain.sketch_2()
-    arrow_sketch = policy_to_arrowsketch(sketch)
-    f_domain = domain.dl_system().add_features(sketch.get_boolean_features() + sketch.get_numerical_features())
-    ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
-    g = FormulaGenerator(len(ltl_rules))
-    with open(filename, 'w') as f:
-        f.write("MODULE main\n")
-        f.write(transition_system_to_smv(domain.dl_system()) + '\n')
-        f.write(features_to_smv(f_domain) + '\n')
-        f.write(rules_to_smv(ltl_rules) + '\n')
-        f.write("LTLSPEC " + ltl_to_smv(g.one_condition()) + ";" + '\n')
-        f.write("LTLSPEC " + ltl_to_smv(g.rules_followed_then_goal()) + ";" + '\n')
-        f.write("LTLSPEC " + ltl_to_smv(g.there_exists_a_path()) + ";" + '\n')
 
 
-def calculate_features_to_smv(boolean_features, numerical_features):
-    domain = BlocksOn()
-    filename = "blocks_on_2.smv"
-    sketch = domain.sketch_2()
-    arrow_sketch = policy_to_arrowsketch(sketch)
-    nfs = [domain.factory().parse_numerical(n) for n in numerical_features]
-    bfs = [domain.factory().parse_boolean(b) for b in boolean_features]
-    f_domain = domain.dl_system().add_features(bfs + nfs)
-    with open(filename, 'w') as f:
-        f.write("MODULE main\n")
-        f.write(transition_system_to_smv(domain.dl_system()) + '\n')
-        f.write(features_to_smv(f_domain) + '\n')
 
-
-def print_ltl():
-    g = FormulaGenerator(4, 2)
-    print("LTLSPEC " + ltl_to_smv(g.one_condition()))
-    print("LTLSPEC " + ltl_to_smv(g.rules_followed_then_goal()))
-    print("LTLSPEC " + ltl_to_smv(g.there_exists_a_path()))
 
 
 def test_pysmv():
@@ -119,412 +84,56 @@ def test_pysmv():
         print(pynusmv.mc.check_ltl_spec(p.expr), p.expr)
     pynusmv.init.deinit_nusmv()
 
-
-def model_check_sketches():
-    domain = BlocksOn()
-    directory = "smvs/"
-    filename = "blocks_on_2.smv"
-    real_sketch = domain.sketch_2()
-    bs = real_sketch.get_boolean_features()
-    ns = real_sketch.get_numerical_features()
-    sketches = generate_sketches(bs, ns, 1)
-
-    f_domain = domain.dl_system().add_features(bs + ns)
-    for s in tqdm(sketches):
-        # print(s)
-        tups = list_to_ruletups(s)
-        # print("t", tups)
-        arrow_sketch = ruletups_to_arrowsketch(tups)
-        # print("as", arrow_sketch.show())
-        ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
-        # print("ltl", ltl_rules)
-        assert(len(ltl_rules) > 0)
-        g = FormulaGenerator(len(ltl_rules))
-        with open(directory + filename, 'w') as f:
-            ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
-            ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
-            f.write(to_smv_format(f_domain, ltl_rules, ltl_specs, ctl_specs))
-        if check_file(directory + filename):
-            print(s)
-
-
-def model_check_sketches_():
-    domain = Miconic()
-    directory = "smvs/"
-    filename = "miconic_2.smv"
-    real_sketch = domain.sketch_2()
-    generator = construct_feature_generator()
-
-    # (syntactic_element_factory, config.complexity, config.time_limit, config.feature_limit, config.num_threads_feature_generator, dlplan_states)  # generate features with all states of instances
-    feature_reprs = generator.generate(domain.factory(), 5, 5, 5, 5, 5, 180, 100000, 1, domain.dl_system().states)
-
-    numerical_features = [domain.factory().parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
-    print(numerical_features)
-    boolean_features = [domain.factory().parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
-
-    feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
-
-    transition_str = transition_system_to_smv(domain.dl_system())
-
-
-    for bs, ns in tqdm(feature_sets):
-        sketches = generate_sketches(bs, ns, 1)
-
-        f_domain = domain.dl_system().add_features(bs + ns)
-        for s in sketches:
-            # print(s)
-            tups = list_to_ruletups(s)
-            # print("t", tups)
-            arrow_sketch = ruletups_to_arrowsketch(tups)
-            # print("as", arrow_sketch.show())
-            # print(f_domain.get_feature_bounds())
-            ltl_rules = fill_in_rules(arrow_sketch.rules, f_domain.get_feature_bounds())
-            # print("ltl", ltl_rules)
-            if len(ltl_rules) > 0:
-                g = FormulaGenerator(len(ltl_rules))
-                with open(directory + filename, 'w') as f:
-                    ltl_specs = [g.one_condition(), g.rules_followed_then_goal(), g.there_exists_a_path()]
-                    ctl_specs = [g.ctl_rule_cannot_lead_into_dead(), g.ctl_rule_can_be_followed()]
-                    f.write(to_smv_format(f_domain, ltl_rules, ltl_specs, ctl_specs))
-                if check_file(directory + filename):
-                    print(arrow_sketch.show() + '\n')
-
-
-def model_check_sketches_bis():
-    domain = BlocksClear()
-    directory = "smvs/"
-    filename = "gripper.smv"
-    generator = construct_feature_generator()
-
-    # (syntactic_element_factory, config.complexity, config.time_limit, config.feature_limit, config.num_threads_feature_generator, dlplan_states)  # generate features with all states of instances
-    feature_reprs = generator.generate(domain.factory(), 5, 5, 5, 5, 5, 180, 100000, 1, domain.dl_system.states)
-
-    numerical_features = [domain.factory().parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
-    print(numerical_features)
-    boolean_features = [domain.factory().parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
-
-    feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
-    print(f"numerical: {len(numerical_features)}")
-    print(f"bools: {len(boolean_features)}")
-    transition_str = transition_system_to_smv(domain.dl_system)
-    # j = 0
-    # for s in feature_sets:
-    #    j = j+1
-    # print(j)
-    # print(comb(len(numerical_features) + len(boolean_features), 2))
-    i = 0
-    for bs, ns in tqdm(feature_sets):
-        rules: Iterator[tuple[list[Condition], list[Effect]]] = generate_rules(bs, ns)
-        def check_rule_file(filepath: str) -> bool:
-            pynusmv.init.init_nusmv()
-            pynusmv.glob.load_from_file(filepath=filepath)
-            pynusmv.glob.compute_model()
-            fsm = pynusmv.glob.prop_database().master.bddFsm
-            ctls = [pynusmv.glob.prop_database()[0]]
-            check = not pynusmv.mc.check_ctl_spec(fsm, ctls[0].expr)
-            pynusmv.init.deinit_nusmv()
-            return check
-
-        def model_check_rule(f_domain, rule: tuple[list[Condition], list[Effect]], filepath: str = None) -> bool:
-            tups = list_to_ruletups((rule,))
-            arrow_rule = ruletups_to_arrowsketch(tups)
-            ltl_rules = fill_in_rules(arrow_rule.rules, f_domain.get_feature_bounds())
-            if len(ltl_rules) > 0:
-                g = FormulaGenerator(len(ltl_rules))
-                with open(filepath, 'w') as f:
-                    ltl_specs = []
-                    ctl_specs = [g.ctl_rule_cannot_lead_into_dead()]
-                    f.write(to_smv_format(f_domain, ltl_rules, ltl_specs, ctl_specs))
-
-            return check_rule_file(filepath)
-        f_domain = domain.dl_system.add_features(bs + ns)
-        filtered_rules = filter(lambda r: model_check_rule(f_domain, r, directory + "gripper.smv"), rules)
-        #print(len(list(filtered_rules)))
-        sketches = generate_sketches_from_rules(filtered_rules, 1)
-
-
-        for s in sketches:
-            i = i+1
-            tups = list_to_ruletups(s)
-            arrow_sketch = ruletups_to_arrowsketch(tups)
-            if model_check_sketch(f_domain, arrow_sketch, directory + filename):
-                yield arrow_sketch
-            # print(i)
-
-
-def calc_and_write_transition_systems(directory: str):
-    """
-
-    :param directory: We assume that the directory has one domain file called "domain.pddl", and all the remaining files are instance files
-    :return:
-    """
-    domain_path: str = directory + "/domain.pddl"
-    domain = src.transition_system.tarski.load_domain(domain_path)
-    instance_files: list[str] = get_instance_names(directory)
-
-    for i_file in tqdm(instance_files):
-        iproblem = ts.tarski.load_instance(domain_path, f"{directory}/{i_file}.pddl")
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        if not os.path.isfile(f"data/{directory}/transition_systems/{i_file}.json"):        # don't calculate the transition system if we already did that
-            tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
-            dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
-
-            fm.write.transition_system(dl_system.graph, dl_system.initial_state, dl_system.goal_states, f"data/{directory}/transition_systems/{i_file}.json")
-            fm.write.dl_states(dl_system.states, f"data/{directory}/states/{i_file}.json")
-
-
-def make_data_files(directory: str):
-    """
-
-    :param directory: We assume that the directory has one domain file called "domain.pddl", and all the remaining files are instance files
-    :return:
-    """
-    domain_path: str = directory + "/domain.pddl"
-    domain = src.transition_system.tarski.load_domain(domain_path)
-    instance_files: list[str] = sorted(os.listdir(directory))
-    instance_files.remove("domain.pddl")
-    print(instance_files)
-
-    states_per_instance: dict[str, list[dlplan.State]] = {}
-
-    for i_file in tqdm(instance_files):
-        iproblem = ts.tarski.load_instance(domain_path, directory + '/' + i_file)
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        tarski_system: ts.tarski.TarskiTransitionSystem = ts.tarski.from_instance(iproblem)
-        dl_system: ts.dlplan.DLTransitionModel = ts.conversions.tarski_to_dl_system(tarski_system, instance)
-
-        with open("transition_systems/" + directory + '/' + i_file.removesuffix(".pddl") + ".json", "w") as trans_file:
-            json.dump({"init": dl_system.initial_state, "goal": dl_system.goal_states, "graph": dl_system.graph.adj}, trans_file)
-
-        with open("data/state_files/" + directory + '/' + i_file.removesuffix(".pddl") + ".json", "w") as state_file:
-            # json.dump([[(instance.get_atom(atom_idx).get_predicate().get_name(), [object.get_name() for object in instance.get_atom(atom_idx).get_objects()]) for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
-            json.dump([[instance.get_atom(atom_idx).get_name() for atom_idx in state.get_atom_idxs()] for state in dl_system.states], state_file)
-
-        states_per_instance[i_file.removesuffix(".pddl")] = dl_system.states
-
-    #vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
-    vocab: dlplan.VocabularyInfo = list(states_per_instance.values())[0][0].get_instance_info().get_vocabulary_info()
-    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
-
-    generator = construct_feature_generator()
-    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, [s for sts in states_per_instance.values() for s in sts])
-    numerical_features: list[dlplan.Numerical] = [factory.parse_numerical(r, i) for i, r in enumerate(feature_reprs) if r.startswith("n_")]
-    boolean_features = [factory.parse_boolean(r, i) for i, r in enumerate(feature_reprs) if r.startswith("b_")]
-
-    for file, sts in states_per_instance.items():
-        with open("feature_valuations/" + file + ".json", "w") as feature_file:
-            json.dump({f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}, feature_file)
-
-
-def test_read_states():
-    domain_path: str = "gripper/domain.pddl"
-    domain = src.transition_system.tarski.load_domain(domain_path)
-    instance_path: str = "gripper_test/p-1-0.pddl"
-
-    iproblem = ts.tarski.load_instance(domain_path, instance_path)
-    instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-
-    states = fm.read.dl_states("data/state_files/gripper_test/p-1-0.json", instance)
-    for i, state in enumerate(states):
-        print(i, [instance.get_atom(idx) for idx in state.get_atom_idxs()])
-
-
-class Instance:
-    def __init__(self, transitions_sys: DirectedGraph, init: int, goal_states: list[int], valuations: dict[str, list[Union[bool, int]]]):
-        assert(init <= transitions_sys.size())
-        assert(all([g <= transitions_sys.size() for g in goal_states]))
-        assert(all([len(valuations[k]) == transitions_sys.size() for k in valuations.keys()]))
-        self.system = transitions_sys
-        self.init = init
-        self.goal_states = goal_states
-        self.valuations = valuations
-
-
-def read_instance(transition_path, valuation_path) -> Instance:
-        graph, init, goal = fm.read.transition_system(transition_path)
-        valuations = fm.read.feature_valuations(valuation_path)
-        return Instance(graph, init, goal, valuations)
-
-
-def graph_to_smv(graph: DirectedGraph, init_index):
-    assert init_index < graph.size()
-    nl = '\n'   # f-strings cannot include backslashes
-    return f"VAR \n" \
-           f"  state: {{{', '.join([f's{i}' for i in range(graph.size())])}}};\n" \
-           f"ASSIGN \n" \
-           f"  init(state) := s{init_index}; \n" \
-           f"  next(state) := case \n" \
-           f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in graph.nbs(i)) }}};''' for i in range(graph.size()))}\n" \
-           f"                 esac;"
-
-def features_to_smv(features: list[Union[dlplan.Boolean, dlplan.Numerical]], instance: Instance):
-    tab = '\t'
-    nl = '\n'
-    return f"DEFINE \n " \
-           f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s_idx}: {str(val).upper()};' for s_idx, val in enumerate(instance.valuations[fn.compute_repr()]))} {nl + tab}esac;''' for fn in features)}\n" \
-           f"{tab}goal := state in {{{', '.join({f's{i}' for i in instance.goal_states})}}};"
-
-def make_instance_smv(i: Instance, features):
-    return "MODULE main\n" \
-           + graph_to_smv(i.system, i.init) + '\n' \
-           + features_to_smv(features, i) + '\n'
-
-def get_instance_names(directory):
-    instance_files: list[str] = sorted(os.listdir(directory))
-    instance_files.remove("domain.pddl")
-    return [fn.removesuffix(".pddl") for fn in instance_files if fn.endswith(".pddl")]
-
-
-def make_instance_smvs(directory, features):
-    instances = get_instance_names(directory)
-    for instance_name in instances:
-        i = read_instance(f"data/{directory}/transition_systems/{instance_name}.json", f"data/{directory}/feature_valuations/{instance_name}.json")
-        smv_format = make_instance_smv(i, features)
-        with open(f"data/{directory}/smvs/{instance_name}.smv", "w") as f:
-            f.write(smv_format)
-
-
-def model_check_from_files(directory):
-    domain_file = f"{directory}/domain.pddl"
-    instance_names = get_instance_names(directory)
-    feature_file = f"data/{directory}/features.json"
-
-    def transition_path(instance_name):
-        return f"data/{directory}/transition_systems/{instance_name}.json"
-    def feature_valuation_path(instance_name):
-        return f"data/{directory}/feature_valuations/{instance_name}.json"
-    def smv_path(instance_name):
-            return f"data/{directory}/smvs/{instance_name}.smv"
-
-    domain = ts.tarski.load_domain(domain_file)
-    vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
-    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
-
-    boolean_features, numerical_features = parse_features(fm.read.feature_representations(feature_file), factory)
-    feature_sets = get_feature_sets(boolean_features, numerical_features, 1)
-
-    make_instance_smvs(directory, boolean_features + numerical_features)
-
-    for bs, ns in tqdm(feature_sets):
-        rules = generate_rules(bs, ns)
-        #filtered_rules = filter(lambda r: all([model_check.rule(i, r, directory + "miconic_2_r.smv") for i in domain.instances]), rules)
-        #sketch_pool = generate_sketches_from_rules(filtered_rules, 1)
-        sketch_pool = generate_sketches_from_rules(rules, 1)
-        """
-        for s in sketch_pool:
-            if all(model_check.sketch(i, s, directory) for i in domain.instances):
-                yield s
-        """
-        for s in sketch_pool:
-            tups = list_to_ruletups(s)
-            # print("t", tups)
-            arrow_sketch = ruletups_to_arrowsketch(tups)
-            # print("as", arrow_sketch.show())
-            checked = True
-            for inst in instance_names:
-                feature_vals:  dict[str, list[Union[bool, int]]] = fm.read.feature_valuations(feature_valuation_path(inst))
-                bounds: dict[dlplan.Numerical, int] = {n: max(feature_vals[n.compute_repr()]) for n in numerical_features}
-                ltl_rules: list[LTLRule] = fill_in_rules(arrow_sketch.rules, bounds)
-                if len(ltl_rules) == 0:
-                    checked = False
-                    break
-
-                if len(ltl_rules) > 0:
-                    g = FormulaGenerator(len(ltl_rules))
-                    ltl_specs = [g.rules_followed_then_goal()]
-                    ctl_specs = [g.ctl_rule_can_be_followed()]
-
-                    with open(smv_path(inst), 'r') as f:
-                        system = f.read()
-
-                    with open(f"data/{directory}/smvs/temp.smv", 'w') as f:
-                        f.write(system + '\n' + rules_to_smv(ltl_rules) + '\n')
-
-                    pynusmv.init.init_nusmv()
-                    pynusmv.glob.load_from_file(filepath=f"data/{directory}/smvs/temp.smv")
-                    pynusmv.glob.compute_model()
-                    fsm = pynusmv.glob.prop_database().master.bddFsm
-
-                    #map(lambda spec: pynusmv.mc.check_ctl_spec(ctl_to_input(spec)), ctl_specs)
-                    if list(map(lambda spec: pynusmv.mc.check_ctl_spec(fsm, ctl_to_input(spec)), ctl_specs)) != [True]:
-                        assert(checked)
-                        checked = False
-                        pynusmv.init.deinit_nusmv()
-                        break
-                    if list(map(lambda spec: pynusmv.mc.check_ltl_spec(ltl_to_input(spec)), ltl_specs)) != [True]:
-                        assert(checked)
-                        checked = False
-                        pynusmv.init.deinit_nusmv()
-                        break
-                    pynusmv.init.deinit_nusmv()
-
-            if checked:
-                yield arrow_sketch
-
-
-def calc_and_write_features(directory):
-    all_states = []
-    instances = []
-    domain_path: str = f"{directory}/domain.pddl"
-    domain = src.transition_system.tarski.load_domain(domain_path)
-
-    for i in get_instance_names(directory):
-
-        instance_path: str = f"{directory}/{i}.pddl"
-
-        iproblem = ts.tarski.load_instance(domain_path, instance_path)
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-        states = fm.read.dl_states(f"data/{directory}/states/{i}.json", instance)
-        instances.append(instance)
-        all_states.extend(states)
-
-    vocab: dlplan.VocabularyInfo = all_states[0].get_instance_info().get_vocabulary_info()
-    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
-    generator = construct_feature_generator()
-    # (syntactic_element_factory, config.complexity, config.time_limit, config.feature_limit, config.num_threads_feature_generator, dlplan_states)  # generate features with all states of instances
-    feature_reprs = generator.generate(factory, 5, 5, 5, 5, 5, 180, 100000, 1, all_states)
-    fm.write.feature_representations([r for r in feature_reprs if r.startswith("n_") or r.startswith("b_")], f"data/{directory}/features.json")
-
-
-def calc_and_write_feature_valuations(directory):
-    domain = src.transition_system.tarski.load_domain(f"{directory}/domain.pddl")
-
-    for inst in get_instance_names(directory):
-        iproblem = ts.tarski.load_instance(f"{directory}/domain.pddl", f"{directory}/{inst}.pddl")
-        instance = ts.conversions.dlinstance_from_tarski(domain, iproblem)
-
-        factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(instance.get_vocabulary_info())    # factory must be calculated through vocab info of an instance to work around "mismatched vocab" error
-        bf, nf = fm.read.features(f"data/{directory}/features.json", factory)
-
-        states = fm.read.dl_states(f"data/{directory}/states/{inst}.json", instance)
-
-        fm.write.feature_valuations({f.compute_repr(): [f.evaluate(s) for s in states] for f in bf + nf}, f"data/{directory}/feature_valuations/{inst}.json")
-
-
-def write_smvs(directory) -> object:
-    domain_path: str = f"{directory}/domain.pddl"
-    domain = src.transition_system.tarski.load_domain(domain_path)
-    vocab: dlplan.VocabularyInfo = src.transition_system.conversions.dlvocab_from_tarski(domain.language)
-    factory: dlplan.SyntacticElementFactory = dlplan.SyntacticElementFactory(vocab)
-
-    bf, nf = fm.read.features(f"data/{directory}/features.json", factory)
-    make_instance_smvs(directory, bf + nf)
-
-
-def main_write_transition_sys(domain):
-    import time
-    start_time = time.time()
-    calc_and_write_transition_systems(domain)
-    print("My program took", time.time() - start_time, "to run")
+def test_made_sketch_gripper():
+    sketch = Sketch([SketchRule([CNAny(feature='n_count(c_equal(r_primitive(at,0,1),r_primitive(at_g,0,1)))')],
+                                [EIncr(feature='n_count(c_equal(r_primitive(at,0,1),r_primitive(at_g,0,1)))')])])
+
+    with open("cache/gripper-strips/transition_systems/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
+        transition_sys = TransitionSystem.deserialize(json.load(f))
+    with open("cache/gripper-strips/features/5_5_10_10_10_180_100000_1/rooma_roomb_left_right_ball1_ball2_ball3_[at_g(ball1,roomb),at_g(ball2,roomb),at_g(ball3,roomb)].json", "r") as f:
+        feature_vals = json.load(f)
+    #print(transition_sys.graph.show())
+    inst = FeatureInstance(transition_sys.graph, transition_sys.init, transition_sys.goals, feature_vals)
+    return verify_sketch(sketch, inst, [law3])
+
+def test_Drexler_sketch_gripper():
+    width_1 = '(:policy (:boolean_features) (:numerical_features "n_count(c_primitive(at,0))" "n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))") (:rule (:conditions) (:effects (:e_n_dec 1)))(:rule (:conditions) (:effects (:e_n_bot 1) (:e_n_inc 0))))'
+
+    sketch = Sketch([SketchRule([],
+                                [EDecr(feature='n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))')]),
+                     SketchRule([],
+                                [EIncr(feature='n_count(c_primitive(at,0))'), ENEqual('n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))')])])
+
+    with open("cache/gripper-strips/transition_systems/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
+        transition_sys = TransitionSystem.deserialize(json.load(f))
+    with open("cache/gripper-strips/features/5_5_10_10_10_180_100000_1/rooma_roomb_left_right_ball1_ball2_ball3_[at_g(ball1,roomb),at_g(ball2,roomb),at_g(ball3,roomb)].json", "r") as f:
+        feature_vals = json.load(f)
+    #print(transition_sys.graph.show())
+    inst = FeatureInstance(transition_sys.graph, transition_sys.init, transition_sys.goals, feature_vals)
+    return verify_sketch(sketch, inst, [law1, law2, simple_law])
+
+def filter_rules():
+    with open("generated/gripper/two_instances_simple_laws_5_5_10_10_10_180_100000_1_2_1.json") as f:
+        sketches_2 = [Sketch.deserialize(rs) for rs in json.load(f)]
+
+    with open("generated/gripper/two_instances_simple_laws_5_5_10_10_10_180_100000_1_1_1.json") as f:
+        sketches_1: list[Sketch] = [Sketch.deserialize(rs) for rs in json.load(f)]
+
+    filtered = filter(lambda sk: not any(rs_1 in sk.rules for sk_1 in sketches_1 for rs_1 in sk_1.rules), sketches_2)
+    for f in filtered:
+        print(f.serialize())
+        print('\n')
 
 
 if __name__ == '__main__':
-    instance = ts.tarski.load_instance("gripper/domain.pddl", "gripper/p-1-0.pddl")
-    print(instance.name)
+    #print(test_sketch())
+    #law = law_test.expand(7)
+    #ex = exists.expand(7)
+    #if_followed = if_followed_next_law.expand(7)
+    #simple = simple_law.expand(7)
+    #print(check_file("gripper3.smv", [simple]))
 
-    # main_write_transition_sys("childsnack")
-    # write_smvs("blocks_4_clear")
-
+    test_Drexler_sketch_gripper()
 
     """
     sketches = list(model_check_from_files("gripper_test"))
