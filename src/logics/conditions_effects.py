@@ -35,10 +35,10 @@ class Condition:
 
 def cond_from_dlplan(c: dlplan.BaseCondition) -> Condition:
     match c.str()[:9]:
-        case "(:c_b_pos": return CPositive(c.get_base_feature())
-        case "(:c_b_neg": return CNegative(c.get_base_feature())
-        case "(:c_n_eq ": return CZero(c.get_base_feature())
-        case "(:c_n_gt ": return CGreater(c.get_base_feature())
+        case "(:c_b_pos": return CPositive(c.get_base_feature().compute_repr())
+        case "(:c_b_neg": return CNegative(c.get_base_feature().compute_repr())
+        case "(:c_n_eq ": return CZero(c.get_base_feature().compute_repr())
+        case "(:c_n_gt ": return CGreater(c.get_base_feature().compute_repr())
         case _: return "invalid"  # TODO raise error
 
 
@@ -62,12 +62,12 @@ class Effect:
 
 def eff_from_dlplan(e: dlplan.BaseEffect) -> Effect:
     match e.str()[:9]:
-        case "(:e_b_pos": return EPositive(e.get_base_feature())
-        case "(:e_b_neg": return ENegative(e.get_base_feature())
-        case "(:e_b_bot": return EBEqual(e.get_base_feature())
-        case "(:e_n_inc": return EIncr(e.get_base_feature())
-        case "(:e_n_dec": return EDecr(e.get_base_feature())
-        case "(:e_n_bot": return ENEqual(e.get_base_feature())
+        case "(:e_b_pos": return EPositive(e.get_base_feature().compute_repr())
+        case "(:e_b_neg": return ENegative(e.get_base_feature().compute_repr())
+        case "(:e_b_bot": return EBEqual(e.get_base_feature().compute_repr())
+        case "(:e_n_inc": return EIncr(e.get_base_feature().compute_repr())
+        case "(:e_n_dec": return EDecr(e.get_base_feature().compute_repr())
+        case "(:e_n_bot": return ENEqual(e.get_base_feature().compute_repr())
         case _: return "invalid"  # TODO raise error
 
 
