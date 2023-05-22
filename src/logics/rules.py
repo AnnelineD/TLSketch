@@ -33,6 +33,9 @@ class LTLRule(Rule):
     def __str__(self) -> str:
         return f"conditions: {self.conditions.show()}    effects: {self.effects.show()}"
 
+    def get_features(self):
+        return {v.data for v in self.conditions.get_vars()}.union({e.data for e in self.effects.get_vars()})
+
 
 class LTLSketch:
     rules: list[LTLRule]
@@ -42,6 +45,9 @@ class LTLSketch:
 
     def n_rules(self):
         return len(self.rules)
+
+    def get_features(self):
+        return {f for r in self.rules for f in r.get_features()}
 
 
 @dataclass

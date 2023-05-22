@@ -31,11 +31,11 @@ def features_to_smv(ts: DLFeatureTransitionModel):
     f"{tab}goal := state in {{{', '.join({f's{i}' for i in ts.transition_model.goal_states})}}};"
 """
 
-def valuations_to_smv(vals: dict[str, list[Union[bool, int]]], goals: list[int]) -> str:
+def valuations_to_smv(vals: dict[str, list[Union[bool, int]]], goals: list[int], features: set[str]) -> str:
     tab = '\t'
     nl = '\n'
     return f"DEFINE \n " \
-           f"{nl.join(f''' {tab}{repr_feature_str(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{e}: {str(s).upper()};' for e, s in enumerate(val))} {nl + tab}esac;''' for fn, val in vals.items())}\n" \
+           f"{nl.join(f''' {tab}{repr_feature_str(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{e}: {str(s).upper()};' for e, s in enumerate(vals[fn]))} {nl + tab}esac;''' for fn in features)}\n" \
            f"{tab}goal := state in {{{', '.join({f's{i}' for i in goals})}}};"
 
 """
