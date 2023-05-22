@@ -109,7 +109,7 @@ def all_combinations(it: Iterator[C], n: int) -> Iterator[tuple[C, ...]]:
     :param n:
     :return: tuples of length <= n
     """
-    yield from itertools.combinations(it, 1)
+    yield from itertools.combinations(it, n)
     #for i, itn in enumerate(itertools.tee(it, n)):
     #    yield from itertools.combinations(itn, i+1)
 
