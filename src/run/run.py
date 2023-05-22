@@ -10,7 +10,7 @@ from src.sketch_generation.generation import construct_feature_generator
 from src.file_manager.cashing import cache_to_file
 from src.sketch_verification.feature_instance import FeatureInstance
 from src.sketch_verification.verify import verify_sketch
-from src.sketch_verification.laws import law1, law2, law3
+from src.sketch_verification.laws import law1, law2, law3, simple_law, impl_law, exists_impl_law
 from tqdm import tqdm
 
 
@@ -24,9 +24,9 @@ def named_feature_file(factory, x1, x2, x3, x4, x5, x6, x7, x8, dlstates: list[d
 
 
 def run():
-    domain = ts.tarski.load_domain("../../miconic/domain.pddl")
+    domain = ts.tarski.load_domain("../../domains/miconic/domain.pddl")
 
-    instance = ts.tarski.load_instance("../../miconic/domain.pddl", "../../miconic/p-2-2-2.pddl")
+    instance = ts.tarski.load_instance("../../domains/miconic/domain.pddl", "../../domains/miconic/p-2-2-2.pddl")
     transition_system = ts.tarski.tarski_to_transition_system(instance)
     dlinstance = ts.conversions.dlinstance_from_tarski(domain, instance)
     dlstates = [ts.dlplan.dlstate_from_state(s, dlinstance) for s in transition_system.states]
@@ -63,27 +63,27 @@ def run():
 
 
 def run_on_multiple_instances():
-    directory = "../../gripper/"
+    directory = "../../domains/gripper/"
     domain_file = directory + "domain.pddl"
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
     domain_name = domain.domain_name
-    instance_files = ["p-1-0.pddl", "p-2-0.pddl"]
+    instance_files = ["p-1-0.pddl", "p-2-0.pddl", "p-3-0.pddl", "p-4-0.pddl"]
     all_states = []
     systems = []
 
-    for inst_f in instance_files:
+    print("Building transition systems")
+    for inst_f in tqdm(instance_files):
         instance = ts.tarski.load_instance(domain_file, directory + inst_f)
         transition_system = ts.tarski.tarski_to_transition_system(instance)
         dlinstance = ts.conversions.dlinstance_from_tarski(domain, instance)
         dlstates = [ts.dlplan.dlstate_from_state(s, dlinstance) for s in transition_system.states]
         systems.append(transition_system)
         all_states.append(dlstates)
+    print("Done with transition systems")
 
     factory = dlplan.SyntacticElementFactory(dl_vocab)
     generator = construct_feature_generator()
-
-
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x, lambda x: x, named_feature_file)(generator.generate)
     params = [5, 5, 10, 10, 10, 180, 100000, 1]
@@ -95,7 +95,6 @@ def run_on_multiple_instances():
 
     bools = [f for f in filtered_features if f.startswith("b_")]
     nums = [f for f in filtered_features if f.startswith("n_")]
-
 
     @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, named_feature_vals)
     def calculate_feature_vals(sts: list[dlplan.State], fs: list[str], fact) -> dict:
@@ -113,18 +112,15 @@ def run_on_multiple_instances():
             feature_vals = calculate_feature_vals(all_states[e], filtered_features, factory)
             feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
 
-            checked = verify_sketch(the_one_sketch, feature_instance, [law1, law2, law3])
+            checked = verify_sketch(the_one_sketch, feature_instance, [law1, law2, impl_law, exists_impl_law])
             if not checked:
                 continue
         if checked:
             yield the_one_sketch
 
-def sketch_to_file(s: Sketch, filename):
-    with open(filename, "w") as file:
-        json.dump(s, filename)
-
 
 if __name__ == '__main__':
-    for s in run_on_multiple_instances():
-        print(s)
+    with open("../../generated/gripper/four_instances_impl_laws_5_5_10_10_10_180_100000_1_1_1.json", "w") as f:
+        json.dump([s.serialize() for s in run_on_multiple_instances()], f)
+
 
