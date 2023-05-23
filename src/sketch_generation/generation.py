@@ -115,25 +115,16 @@ def all_combinations(it: Iterator[C], n: int) -> Iterator[tuple[C, ...]]:
 
 
 def generate_rules(boolean_features: list[str], numerical_features: list[str]) -> Iterator[SketchRule]:
-    print("in generate rules")
     cs: Iterator[list[Condition]] = possible_conditions(boolean_features, numerical_features)
-    print("got cs")
-    #nc = next(cs)
-    #ne = next(possible_effects(nc))
-    #rs: Iterator[tuple[list[Condition], list[Effect]]] = iter([(nc, ne)])
     rs: Iterator[tuple[list[Condition], list[Effect]]] = dependent_product(cs, possible_effects)
-    print("got rs")
     return map(SketchRule.from_tuple, rs)
 
 
 def generate_sketches(boolean_features: list[str], numerical_features: list[str], max_rules=3, max_features=3) -> Iterator[Sketch]:
-    print("in generate sketches")
     fsets = get_feature_sets(boolean_features, numerical_features, max_features)  # TODO also sets of size < max_features
     for bfs, nfs in fsets:
         rs = generate_rules(bfs, nfs)
-        print("got rs here")
         rs_combs = all_combinations(rs, max_rules)
-        print("got rs combs")
         yield from map(Sketch.from_tuple, rs_combs)
     # return map(Sketch.from_tuple, rs_combs)
 

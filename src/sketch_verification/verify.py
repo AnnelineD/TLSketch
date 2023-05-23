@@ -43,7 +43,7 @@ def check_file(filepath: str, laws: list[Law]):
             case f if isinstance(f, LTLFormula):
                 truth, expl = pynusmv.mc.check_explain_ltl_spec(logic_translation.ltl_to_input(l.formula))
                 if truth != l.truth:
-                    print(expl)
+                    #print(expl)
                     pynusmv.init.deinit_nusmv()
                     return False
 
