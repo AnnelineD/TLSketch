@@ -7,7 +7,7 @@ from src.transition_system.transition_system import StateStr
 
 Feature = Union[dlplan.Boolean, dlplan.Numerical]
 
-
+"""
 class DLTransitionModel:
     def __init__(self, instance_info: dlplan.InstanceInfo, states: list[dlplan.State], init: int, goal_state_indices: list[int], graph: DirectedGraph):
         for i, s in enumerate(states):
@@ -36,7 +36,7 @@ class DLFeatureTransitionModel:
                 bounds.update({f: max(vals)})
         return bounds
 
-
+"""
 def eval_feature(feature, states: set[DLState]) -> dict[DLState, Feature]:
     return {s: feature.evaluate(s) for s in states}
 

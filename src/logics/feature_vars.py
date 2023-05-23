@@ -22,11 +22,10 @@ class NumericalVar(FeatureVar):
 
 @dataclass(frozen=True, eq=True)
 class BooleanVar(FeatureVar):
-    data: dlplan.Boolean
+    data: str
     value: bool
 
     def var_show(self) -> str:
-        idx = self.data.get_index()
         match self.value:
-            case True: return f"b{idx}"
-            case False: return f"¬b{idx}"
+            case True: return f"{self.data}"
+            case False: return f"¬{self.data}"

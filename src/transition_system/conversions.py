@@ -3,7 +3,6 @@ import tarski.fstrips
 
 #from .tarski import TarskiTransitionSystem
 from .tarski_manipulation import sort_constants, typed_permutations
-from .dlplan import DLTransitionModel
 from .types import *
 from .transition_system import StateStr
 

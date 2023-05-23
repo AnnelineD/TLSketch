@@ -1,5 +1,5 @@
 from src.logics.rules import LTLSketch
-from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
+#from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
 from src.logics.feature_vars import *
@@ -18,11 +18,11 @@ def graph_to_smv(graph: DirectedGraph, init_index):
         f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in graph.nbs(i)) }}};''' for i in range(graph.size()))}\n" \
         f"                 esac;"
 
-
+"""
 def transition_system_to_smv(transition_system: DLTransitionModel):
     return graph_to_smv(transition_system.graph, transition_system.initial_state)
 
-"""
+
 def features_to_smv(ts: DLFeatureTransitionModel):
     tab = '\t'
     nl = '\n'
