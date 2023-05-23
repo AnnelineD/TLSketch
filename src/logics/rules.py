@@ -80,10 +80,11 @@ class SketchRule(Rule):
     def get_features(self) -> set[Feature]:
         return self.get_condition_features().union(self.get_effect_features())
 
-    def to_ltl(self, bounds: dict[str, int]) -> list['LTLRule']:
+    def to_ltl(self, bounds: dict[str, (int, int)]) -> list['LTLRule']:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
         # TODO what to do with rules without effects -> can't exist
         assert(len(self.effects) > 0)
+        assert(all([l <= u for (l, u) in bounds.values()]))
         features: set[Feature] = self.get_condition_features()   # Get only the features that are present in conditions or effects
         # We do not need features that are not mentioned in conditions and are unchanged in the effects
         for ef in self.effects:
@@ -96,7 +97,7 @@ class SketchRule(Rule):
 
         for v in condition_vars:
             match v:
-                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(1, bounds[f] + 1)]
+                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(max(bounds[f][0], 1), bounds[f][1] + 1)]
                 case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
                 case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
                 case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
@@ -107,7 +108,7 @@ class SketchRule(Rule):
         for f in options:
             if not options[f]:
                 match f:
-                    case x if x.startswith("n_"): options[f] = [NumericalVar(f, i) for i in range(0, bounds[x] + 1)]
+                    case x if x.startswith("n_"): options[f] = [NumericalVar(f, i) for i in range(bounds[f][0], bounds[f][1] + 1)]
                     case x if x.startswith("b_"): options[f] = [BooleanVar(f, True), BooleanVar(f, False)]
                     case _: print("something went wrong while filling in the feature values")        # TODO raise error
 
@@ -136,19 +137,19 @@ class SketchRule(Rule):
                     case ENegative(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, False))
                     case EBEqual(f): new_effect = new_effect.replace(Var(e), BooleanVar(f, c_dict[f].value))
                     case EDecr(f):
-                        if c_dict[f].value == 0:
+                        if c_dict[f].value == bounds[f][0]:
                             new_effect = Bottom()  # The effect is impossible to reach because the feature cannot decrease anymore
-                        elif c_dict[f].value == 1:
-                            new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
+                        # elif c_dict[f].value == bounds[f][0] + 1:
+                            # new_effect = new_effect.replace(Var(e), NumericalVar(f, 0))
                         else:
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(0, c_dict[f].value))))
+                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(bounds[f][0], c_dict[f].value))))
                     case EIncr(f):
-                        if bounds[f] - c_dict[f].value == 0:
+                        if bounds[f][1] - c_dict[f].value == 0:
                             new_effect = Bottom()  # The effect is impossible to reach because the feature cannot increase anymore
-                        elif bounds[f] - c_dict[f].value <= 1:
-                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f]))
+                        elif bounds[f][1] - c_dict[f].value <= 1:
+                            new_effect = new_effect.replace(Var(e), NumericalVar(f, bounds[f][1]))
                         else:
-                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f] + 1))))
+                            new_effect = new_effect.replace(Var(e), reduce(Or, map(lambda v: NumericalVar(f, v), range(c_dict[f].value + 1, bounds[f][1] + 1))))
                     case ENEqual(f): new_effect = new_effect.replace(Var(e), NumericalVar(f, c_dict[f].value))
                     case EBAny(f): raise NotImplementedError
                     case ENAny(f): raise NotImplementedError
@@ -175,7 +176,7 @@ class Sketch:
     def from_tuple(cls, tup: tuple[SketchRule]):
         return cls(list(tup))
 
-    def to_ltl(self, bounds: dict[dlplan.Numerical, int]) -> LTLSketch:
+    def to_ltl(self, bounds: dict[str, (int, int)]) -> LTLSketch:
         return LTLSketch([nr for r in self.rules for nr in r.to_ltl(bounds)])
 
     def serialize(self):

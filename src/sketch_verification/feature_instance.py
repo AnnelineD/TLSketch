@@ -17,5 +17,6 @@ class FeatureInstance:
         self.goal_states = goal_states
         self.feature_valuations = feature_valuations
 
-    def get_bounds(self) -> dict[dlplan.Numerical, int]:
-        return {f_name: max(self.feature_valuations[f_name]) for f_name in self.feature_valuations.keys() if f_name.startswith('n_')}
+    def get_bounds(self) -> dict[str, (int, int)]:
+        return {f_name: (min(self.feature_valuations[f_name]), max(self.feature_valuations[f_name]))
+                for f_name in self.feature_valuations.keys() if f_name.startswith('n_')}
