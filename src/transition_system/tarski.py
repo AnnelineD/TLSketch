@@ -2,6 +2,7 @@ import tarski.search.operations
 from dataclasses import dataclass
 from tarski.io import PDDLReader
 
+from src.utils.timer import timer
 from .tarski_manipulation import sort_constants, get_ground_actions
 from .transition_system import TransitionSystem, StateStr
 from .types import *
@@ -80,7 +81,8 @@ def tmodel_to_state(tmodel: TModel) -> StateStr:
     return [str(a) for a in tmodel.as_atoms()]
 
 
-@fm.cashing.cache_to_file("../../cache/", TransitionSystem.serialize, TransitionSystem.deserialize, fm.names.transition_system)
+@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), TransitionSystem.deserialize, fm.names.transition_system)
+@timer("../../cache/timers/", fm.names.transition_system)
 def tarski_to_transition_system(instance_problem: TProblem) -> TransitionSystem:
     tstates, graph = construct_graph(instance_problem)
     goal_states: list[int] = calc_goal_states(tstates, instance_problem.goal)

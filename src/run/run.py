@@ -1,5 +1,7 @@
 import json
 
+import tarski.fstrips
+
 import src.sketch_generation.generation
 import src.transition_system as ts
 import dlplan
@@ -12,6 +14,8 @@ from src.sketch_verification.feature_instance import FeatureInstance
 from src.sketch_verification.verify import verify_sketch
 from src.sketch_verification.laws import law1, law2, law3, simple_law, impl_law, exists_impl_law
 from tqdm import tqdm
+
+from src.utils.timer import timer
 
 
 def named_feature_vals(dlstates: list[dlplan.State], string_features, factory) -> str:
@@ -68,13 +72,13 @@ def run_on_multiple_instances():
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
     domain_name = domain.domain_name
-    instance_files = ["p-1-0.pddl", "p-2-0.pddl", "p-3-0.pddl", "p-4-0.pddl"]
+    instance_files = ["p-1-0.pddl", "p-2-0.pddl"]
     all_states = []
     systems = []
 
     print("Building transition systems")
     for inst_f in tqdm(instance_files):
-        instance = ts.tarski.load_instance(domain_file, directory + inst_f)
+        instance: tarski.fstrips.Problem = ts.tarski.load_instance(domain_file, directory + inst_f)
         transition_system = ts.tarski.tarski_to_transition_system(instance)
         dlinstance = ts.conversions.dlinstance_from_tarski(domain, instance)
         dlstates = [ts.dlplan.dlstate_from_state(s, dlinstance) for s in transition_system.states]
@@ -85,7 +89,8 @@ def run_on_multiple_instances():
     factory = dlplan.SyntacticElementFactory(dl_vocab)
     generator = construct_feature_generator()
 
-    cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x, lambda x: x, named_feature_file)(generator.generate)
+    cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
+                                    lambda x: x, named_feature_file)(timer(f"../../cache/timers{domain_name}/features/", named_feature_file)(generator.generate))
     params = [5, 5, 10, 10, 10, 180, 100000, 1]
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, *params, [s for states in all_states for s in states])))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
@@ -97,6 +102,7 @@ def run_on_multiple_instances():
     nums = [f for f in filtered_features if f.startswith("n_")]
 
     @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, named_feature_vals)
+    @timer(f"../../cache/timers/{domain_name}/features/{'_'.join(map(str, params))}/", named_feature_vals)
     def calculate_feature_vals(sts: list[dlplan.State], fs: list[str], fact) -> dict:
         fact = dlplan.SyntacticElementFactory(sts[0].get_instance_info().get_vocabulary_info()) # TODO why doesn't it work with the given factory?
         boolean_features = [fact.parse_boolean(f) for f in fs if f.startswith("b_")]
@@ -120,7 +126,11 @@ def run_on_multiple_instances():
 
 
 if __name__ == '__main__':
-    with open("../../generated/gripper/four_instances_impl_laws_5_5_10_10_10_180_100000_1_1_1.json", "w") as f:
-        json.dump([s.serialize() for s in run_on_multiple_instances()], f)
+    filename = "test.json"
 
+    @timer("../../generated/timers/gripper/", lambda: filename)
+    def write_all():
+        with open("../../generated/gripper/" + filename, "w") as f:
+            json.dump([s.serialize() for s in run_on_multiple_instances()], f)
 
+    write_all()
