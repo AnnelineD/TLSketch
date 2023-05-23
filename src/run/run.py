@@ -6,6 +6,7 @@ import src.sketch_generation.generation
 import src.transition_system as ts
 import dlplan
 
+import src.file_manager.names as names
 from src.logics.conditions_effects import Feature
 from src.logics.rules import Sketch
 from src.sketch_generation.generation import construct_feature_generator
@@ -16,15 +17,6 @@ from src.sketch_verification.laws import law1, law2, law3, simple_law, impl_law,
 from tqdm import tqdm
 
 from src.utils.timer import timer
-
-
-def named_feature_vals(dlstates: list[dlplan.State], string_features, factory) -> str:
-    inst: dlplan.InstanceInfo = dlstates[0].get_instance_info()
-    return f"{'_'.join([c.get_name() for c in inst.get_objects()])}_{repr(inst.get_static_atoms()).replace(' ', '')}.json"
-
-
-def named_feature_file(factory, x1, x2, x3, x4, x5, x6, x7, x8, dlstates: list[dlplan.State]):
-    return f"{x1}_{x2}_{x3}_{x4}_{x5}_{x6}_{x7}_{x8}.json"
 
 
 def run():
@@ -38,7 +30,7 @@ def run():
     factory = dlplan.SyntacticElementFactory(dlinstance.get_vocabulary_info())
     generator = construct_feature_generator()
 
-    cached_generate = cache_to_file(f"../../cache/{instance.domain_name}/features/", lambda x: x, lambda x: x, named_feature_file)(generator.generate)
+    cached_generate = cache_to_file(f"../../cache/{instance.domain_name}/features/", lambda x: x, lambda x: x, names.feature_file)(generator.generate)
     params = [5, 5, 10, 10, 10, 180, 100000, 1]
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, *params, dlstates)))      # TODO check these parameters
     bools = [f for f in string_features if f.startswith("b_")]
@@ -90,7 +82,7 @@ def run_on_multiple_instances():
     generator = construct_feature_generator()
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
-                                    lambda x: x, named_feature_file)(timer(f"../../cache/timers{domain_name}/features/", named_feature_file)(generator.generate))
+                                    lambda x: x, names.feature_file)(timer(f"../../cache/timers{domain_name}/features/", names.feature_file)(generator.generate))
     params = [5, 5, 10, 10, 10, 180, 100000, 1]
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, *params, [s for states in all_states for s in states])))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
@@ -101,8 +93,8 @@ def run_on_multiple_instances():
     bools = [f for f in filtered_features if f.startswith("b_")]
     nums = [f for f in filtered_features if f.startswith("n_")]
 
-    @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, named_feature_vals)
-    @timer(f"../../cache/timers/{domain_name}/features/{'_'.join(map(str, params))}/", named_feature_vals)
+    @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, names.feature_vals)
+    @timer(f"../../cache/timers/{domain_name}/features/{'_'.join(map(str, params))}/", names.feature_vals)
     def calculate_feature_vals(sts: list[dlplan.State], fs: list[str], fact) -> dict:
         fact = dlplan.SyntacticElementFactory(sts[0].get_instance_info().get_vocabulary_info()) # TODO why doesn't it work with the given factory?
         boolean_features = [fact.parse_boolean(f) for f in fs if f.startswith("b_")]
