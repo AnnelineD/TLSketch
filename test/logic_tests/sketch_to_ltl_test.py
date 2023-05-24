@@ -93,8 +93,8 @@ class ToLTLTest(unittest.TestCase):
                                        LTLRule(BooleanVar('b_a', True), BooleanVar('b_a', False))
                                        ])
 
-        for e, r in enumerate(ltl_sketch.rules):
-            print(e, r.conditions.show(), r.effects.show())
+        # for e, r in enumerate(ltl_sketch.rules):
+        #     print(e, r.conditions.show(), r.effects.show())
         self.assertTrue(compare_ltl_sketches(ltl_sketch, wanted_ltl_sketch))
 
         sketch_2 = Sketch([SketchRule([CZero('n_n')], [EDecr('n_o')])])
@@ -105,8 +105,8 @@ class ToLTLTest(unittest.TestCase):
             LTLRule(NumericalVar('n_n', 0) & NumericalVar('n_o', 3), NumericalVar('n_o', 1) | NumericalVar('n_o', 2)),
         ])
 
-        for e, r in enumerate(ltl_sketch_2.rules):
-            print(e, r.conditions.show(), '\t',  r.effects.show())
+        # for e, r in enumerate(ltl_sketch_2.rules):
+        #     print(e, r.conditions.show(), '\t',  r.effects.show())
 
         self.assertTrue(compare_ltl_sketches(ltl_sketch_2, wanted_ltl_sketch_2))
 

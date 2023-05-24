@@ -12,7 +12,7 @@ import ltl
 from src.transition_system.graph import DirectedGraph
 
 
-class SketchVerification(unittest.TestCase):
+class SketchVerificationTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.law_ltl_true = Law(ltl.Globally(ltl.Top()), True)
@@ -32,7 +32,7 @@ class SketchVerification(unittest.TestCase):
         self.law_c0 = Law(ctl.AG(ctl.Var("c0")), False)
 
     def test_verify_from_file(self):
-        self.assertTrue(check_file("blocks_clear_0.smv", [self.law_ltl_true, self.law_ltl_false, self.law_ctl_true, self.law_ctl_false]))
+        self.assertTrue(check_file("test/sketch_verification/blocks_clear_0.smv", [self.law_ltl_true, self.law_ltl_false, self.law_ctl_true, self.law_ctl_false]))
 
     def test_verification(self):
         self.assertTrue(verification(self.ltl_sketch1, self.instance1, [self.law_c0_or_c1, self.law_c0]))

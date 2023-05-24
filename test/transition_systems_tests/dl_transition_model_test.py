@@ -1,9 +1,10 @@
 import unittest
 
-from src.transition_system.dlplan import *
+import dlplan
+import src.transition_system as ts
 
 
-class DLTransitionModelTest(unittest.TestCase):
+class TransitionSystemTest(unittest.TestCase):
     v = dlplan.VocabularyInfo()
     v.add_predicate("on", 2)
     v.add_predicate("on_g", 2)
@@ -40,7 +41,7 @@ class DLTransitionModelTest(unittest.TestCase):
     s4 = dlplan.State(i, [a2, a5, a6])
     states = [s0, s1, s2, s3, s4]
 
-    tm = DLTransitionModel(i, states, 0, [], DirectedGraph())
+    # tm = DLTransitionModel(i, states, 0, [], DirectedGraph())
 
     f = dlplan.SyntacticElementFactory(v)
     n_feature: dlplan.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
@@ -51,15 +52,14 @@ class DLTransitionModelTest(unittest.TestCase):
     def test_add_features(self):
 
         # bool_tm = add_feature_propositions(self.tm, self.b_feature)
-        bool_tm = self.tm.add_features([self.b_feature])
-        self.assertEqual({self.b_feature: {self.tm.states[0]: True, self.tm.states[1]: True, self.tm.states[2]: True, self.tm.states[3]: False, self.tm.states[4]: False}},
-                         bool_tm.features)
+        bool_evals = ts.dlplan.eval_features([self.b_feature], self.states)
+        self.assertEqual({self.b_feature: {self.states[0]: True, self.states[1]: True, self.states[2]: True, self.states[3]: False, self.states[4]: False}},
+                         bool_evals)
 
-        num_tm = self.tm.add_features([self.n_feature])
-        self.assertEqual({self.n_feature: {self.tm.states[0]: 1, self.tm.states[1]: 1, self.tm.states[2]: 2, self.tm.states[3]: 1, self.tm.states[4]: 1}},
-                         num_tm.features)
+        num_evals = ts.dlplan.eval_features([self.n_feature], self.states)
+        self.assertEqual({self.n_feature: {self.states[0]: 1, self.states[1]: 1, self.states[2]: 2, self.states[3]: 1, self.states[4]: 1}},
+                         num_evals)
 
-        self.assertEqual({self.n_feature: 2}, num_tm.get_feature_bounds())
 
 
 

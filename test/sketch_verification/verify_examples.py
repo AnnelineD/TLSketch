@@ -52,7 +52,7 @@ class VerifyExamples(unittest.TestCase):
         self.law3 = AbstractLaw(rules_followed_then_goal, True)
 
     def verify_existing_sketch(self, domain, sketch_n):
-        print("yes")
+        # print("yes")
         policy = domain.sketches()[sketch_n]
         sketch = Sketch.from_policy(policy)
         features = policy.get_boolean_features() + policy.get_numerical_features()
@@ -60,7 +60,7 @@ class VerifyExamples(unittest.TestCase):
         # print(feature_vals)
         instance = FeatureInstance(domain.transition_system.graph, domain.transition_system.init, domain.transition_system.goals, feature_vals)
 
-        print(impl_law.expand(2).formula.show())
+        # print(impl_law.expand(2).formula.show())
         self.assertTrue(verify_sketch(sketch, instance, [impl_law, exists_impl_law]))
 
     def test_verify_Gripper(self):

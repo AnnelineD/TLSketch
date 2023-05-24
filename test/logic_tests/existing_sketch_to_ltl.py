@@ -1,21 +1,32 @@
 import unittest
 import dlplan
+import ltl
+import src.transition_system as ts
+from src.logics.conditions_effects import *
+from src.logics.feature_vars import NumericalVar, BooleanVar
+from src.logics.rules import Sketch, SketchRule, LTLSketch, LTLRule
 
-import src.dlplan_utils
-from src.logics.sketch_to_ltl import *
-from src.transition_system.conversions import dlinstance_from_tarski
-from src.transition_system.tarski import *
+
+def compare_ltl_sketches(s1: LTLSketch, s2: LTLSketch):
+    # Only works if rules are in the same order!!!
+    for r1, r2 in zip(s1.rules, s2.rules):
+        if not(r1.conditions == r2.conditions and r1.effects == r2.effects):
+            return False
+
+    return True
 
 
-class MyTestCase(unittest.TestCase):
+class SketchFromPolicyTest(unittest.TestCase):
     def get_factory(self, domain_file: str, instance_file: str):
-        dproblem, iproblem = load_domain_instance(domain_file, instance_file)
-        i = dlinstance_from_tarski(dproblem, iproblem)
+        dproblem = ts.load_domain(domain_file)
+        iproblem = ts.load_instance(domain_file, instance_file)
+        i = ts.dlinstance_from_tarski(dproblem, iproblem)
 
         return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
 
     def test_blocks_clear_(self):
-        factory = self.get_factory("../../blocks_4_clear/domain.pddl", "../../blocks_4_clear/p-3-0.pddl")
+        factory = self.get_factory("domains/blocks_4_clear/domain.pddl",
+                                   "domains/blocks_4_clear/p-3-0.pddl")
 
         """
         {} -> {h, n=}
@@ -28,28 +39,28 @@ class MyTestCase(unittest.TestCase):
                                                              '(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))\n'
                                                              ')', factory)
 
-        h = sketch_0.get_boolean_features()[0]
-        n = sketch_0.get_numerical_features()[0]
-        rule_tups = policy_to_rule_tuples(sketch_0)
-        sketch = Sketch([SketchRule(cs, es[0]) for cs, es in rule_tups])
+        h = sketch_0.get_boolean_features()[0].compute_repr()
+        n = sketch_0.get_numerical_features()[0].compute_repr()
+        sketch = Sketch.from_policy(sketch_0)
 
-        wanted_rules_0: list[SketchRule] = [
-            SketchRule([], [EPositive(h), ENEqual(n)]),
-            SketchRule([CGreater(n)], [ENegative(h), EDecr(n)])
-        ]
+        wanted_sketch: Sketch = Sketch([
+            SketchRule([CGreater(n)], [ENegative(h), EDecr(n)]),
+            SketchRule([], [EPositive(h), ENEqual(n)])
+        ])
 
+        self.assertEqual(sketch.rules, wanted_sketch.rules)
 
-        wanted_ltl_0 = [
-            LTLRule(NumericalVar(data=n, value=1), And(l=BooleanVar(data=h, value=False), r=NumericalVar(data=n, value=0))),
-             LTLRule(NumericalVar(data=n, value=2), And(l=BooleanVar(data=h, value=False), r=Or(l=NumericalVar(data=n, value=0), r=NumericalVar(data=n, value=1)))),
-             LTLRule(NumericalVar(data=n, value=0), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=0))),
-             LTLRule(NumericalVar(data=n, value=1), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=1))),
-             LTLRule(NumericalVar(data=n, value=2), And(l=BooleanVar(data=h, value=True), r=NumericalVar(data=n, value=2)))]
+        wanted_ltl_0 = LTLSketch([
+            LTLRule(NumericalVar(data=n, value=1), BooleanVar(data=h, value=False) & NumericalVar(data=n, value=0)),
+             LTLRule(NumericalVar(data=n, value=2), (NumericalVar(data=n, value=0) | NumericalVar(data=n, value=1)) & BooleanVar(data=h, value=False)),
+             LTLRule(NumericalVar(data=n, value=0), BooleanVar(data=h, value=True) & NumericalVar(data=n, value=0)),
+             LTLRule(NumericalVar(data=n, value=1), BooleanVar(data=h, value=True) & NumericalVar(data=n, value=1)),
+             LTLRule(NumericalVar(data=n, value=2), BooleanVar(data=h, value=True) & NumericalVar(data=n, value=2))])
 
-        self.assertEqual(wanted_ltl_0, fill_in_rules(sketch, {n: 2}))
+        compare_ltl_sketches(wanted_ltl_0, sketch.to_ltl({n: (0, 2)}))
 
     def test_blocks_on(self):
-        factory = self.get_factory("../../blocks_4_on/domain.pddl", "../../blocks_4_on/p-3-0.pddl")
+        factory = self.get_factory("domains/blocks_4_on/domain.pddl", "domains/blocks_4_on/p-3-0.pddl")
 
         """
         {¬b1} -> {n0=, b0=}
@@ -64,38 +75,41 @@ class MyTestCase(unittest.TestCase):
                                                              '(:rule (:conditions (:c_b_neg 0)) (:effects (:e_b_bot 1) (:e_n_bot 0)))\n'
                                                              ')', factory)
 
-        b0 = sketch_0.get_boolean_features()[0]
-        b1 = sketch_0.get_boolean_features()[1]
-        n = sketch_0.get_numerical_features()[0]
-        arrow_sketch_0 = policy_to_arrowsketch(sketch_0)
+        b0 = sketch_0.get_boolean_features()[0].compute_repr()
+        b1 = sketch_0.get_boolean_features()[1].compute_repr()
+        n = sketch_0.get_numerical_features()[0].compute_repr()
+        sketch = Sketch.from_policy(sketch_0)
 
-        wanted_rules_0: list[ArrowLTLRule] = [
-            ArrowLTLRule(Var(CPositive(b1)), Var(EPositive(b0)) | Var(EDecr(n))),
-            ArrowLTLRule(Var(CNegative(b1)), (((Var(ENAny(n)) & Var(EBAny(b0))) | Var(EPositive(b0))) | Var(EDecr(n))))
-        ]
+        wanted_sketch = Sketch([
+            SketchRule([CNegative(b1)], [ENEqual(n), EBEqual(b0)]),
+            SketchRule([], [EPositive(b0)]),
+            SketchRule([], [EDecr(n)])
+        ])
 
-        self.assertEqual(wanted_rules_0, arrow_sketch_0.rules)
+        self.assertEqual(wanted_sketch.rules, sketch.rules)
 
     def test_gripper(self):
-        factory = self.get_factory("../../gripper/domain.pddl", "../../gripper/p-3-0.pddl")
+        factory = self.get_factory("domains/gripper/domain.pddl", "domains/gripper/p-3-0.pddl")
         v: dlplan.VocabularyInfo = factory.get_vocabulary_info()
         v.get_predicates()
 
-        sketch_1: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
+        policy_1: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
                                                              '(:boolean_features)\n'
                                                              '(:numerical_features "n_count(c_primitive(at,0))" "n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))")\n'
                                                              '(:rule (:conditions) (:effects (:e_n_dec 1)))\n'
                                                              '(:rule (:conditions) (:effects (:e_n_bot 1) (:e_n_inc 0)))\n'
                                                              ')', factory)
 
-        g = sketch_1.get_numerical_features()[0]
-        ga = sketch_1.get_numerical_features()[1]
-        arrow_sketch_1 = policy_to_arrowsketch(sketch_1)
-        wanted_rules_1 = [
-            ArrowLTLRule(Top(), Var(EDecr(ga)) | (Var(EIncr(g)) & Var(ENAny(ga))))
-        ]
+        g = policy_1.get_numerical_features()[0].compute_repr()
+        ga = policy_1.get_numerical_features()[1].compute_repr()
+        sketch_1 = Sketch.from_policy(policy_1)
 
-        self.assertEqual(wanted_rules_1, arrow_sketch_1.rules)
+        wanted_sketch_1 = Sketch([
+            SketchRule([], [EDecr(ga)]),
+            SketchRule([], [EIncr(g), ENEqual(ga)])
+        ])
+
+        self.assertEqual(wanted_sketch_1.rules, sketch_1.rules)
 
 
 

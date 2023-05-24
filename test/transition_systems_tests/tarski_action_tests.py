@@ -6,9 +6,11 @@ from src.transition_system.tarski_manipulation import *
 
 
 class TarskiActionTest(unittest.TestCase):
+    path = "domains/"
+
     reader = PDDLReader(raise_on_error=True)
-    reader.parse_domain('blocks_4_clear/domain.pddl')
-    problem = reader.parse_instance('blocks_4_clear/p-3-0.pddl')
+    reader.parse_domain(path + 'blocks_4_clear/domain.pddl')
+    problem = reader.parse_instance(path + 'blocks_4_clear/p-3-0.pddl')
 
     b1 = problem.language.get("b1")
     b2 = problem.language.get("b2")
