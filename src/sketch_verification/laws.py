@@ -81,8 +81,8 @@ def there_exists_simple(n) -> ltl.LTLFormula:
 
 
 def impl_func(n) -> ltl.LTLFormula:
-    apply_rule = reduce(ltl.Or, [ci & ltl.Finally(ei) for ci, ei in rules(n)])
-    applied_rule = reduce(ltl.Or, [ltl.Once(ci) & ei for ci, ei in rules(n)])
+    apply_rule = reduce(ltl.Or, [ci & ltl.Next(ltl.Finally(ei)) for ci, ei in rules(n)])
+    applied_rule = reduce(ltl.Or, [ltl.Previous(ltl.Once(ci)) & ei for ci, ei in rules(n)])
     return ltl.Then(apply_rule & ltl.Globally(ltl.Then(applied_rule, apply_rule | ltl_goal)), ltl.Finally(ltl_goal))
 
 
