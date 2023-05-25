@@ -85,8 +85,8 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
                                     lambda x: x, names.feature_file)(timer(f"../../cache/timers{domain_name}/features/", names.feature_file)(generator.generate))
-    params = [5, 5, 10, 10, 10, 180, 100000, 1]
-    string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, *params, [s for states in all_states for s in states])))      # TODO check these parameters
+    params = [5, 5, 5, 5, 5, 3600, 10000]
+    string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, [s for states in all_states for s in states], *params)))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
                                                                  "b_empty(c_bot)",
                                                                  "n_count(c_top)",

@@ -46,7 +46,8 @@ def eval_features(features: list[Feature], states: list[DLState]) -> dict[Featur
 
 
 def dlstate_from_state(state: StateStr, instance: dlplan.InstanceInfo) -> DLState:
-    return dlplan.State(instance, [instance.get_atom(instance.get_atom_idx(atom)) for atom in state])
+    return dlplan.State(instance, [instance.get_atom(atom) for atom in state])
+
 
 
 
