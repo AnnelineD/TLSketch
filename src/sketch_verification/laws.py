@@ -89,7 +89,7 @@ def impl_func(n) -> ltl.LTLFormula:
 def exists_impl_func(n) -> ltl.LTLFormula:
     apply_rule = reduce(ltl.Or, [ci & ltl.Finally(ei) for ci, ei in rules(n)])
     applied_rule = reduce(ltl.Or, [ltl.Once(ci) & ei for ci, ei in rules(n)])
-    return ltl.Not(apply_rule & ltl.Globally(ltl.Then(applied_rule, apply_rule | ltl_goal)))
+    return ltl.Not(ltl_goal) & ltl.Not(apply_rule & ltl.Globally(ltl.Then(applied_rule, apply_rule | ltl_goal)))
 
 
 law1 = AbstractLaw(ctl_rule_can_be_followed, True)
