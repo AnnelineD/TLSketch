@@ -136,6 +136,9 @@ if __name__ == '__main__':
 
     @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
     def write_all():
+        file_dir = f"../../generated/{domain_name}/"
+        if not os.path.isdir(file_dir):
+            os.mkdir(file_dir)
         with open(f"../../generated/{domain_name}/" + filename, "w") as f:
             json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[0:10])], f)
 
