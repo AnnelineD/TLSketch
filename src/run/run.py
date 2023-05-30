@@ -62,6 +62,15 @@ def run():
             print(the_one_sketch)
 
 
+def cache_all_transition_systems(domain_file: str, instance_files: list[str]):
+    print("Building transition systems and reading states")
+    for inst_f in tqdm(instance_files):
+        instance: tarski.fstrips.Problem = ts.tarski.load_instance(domain_file, directory + inst_f)
+        instance.name = inst_f.removesuffix(".pddl")
+        ts.tarski.tarski_to_transition_system(instance)
+    print("Done with transition systems")
+
+
 def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
@@ -85,7 +94,7 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
                                     lambda x: x, names.feature_file)(timer(f"../../cache/timers{domain_name}/features/", names.feature_file)(generator.generate))
-    params = [5, 5, 5, 5, 5, 3600, 10000]
+    params = [5, 5, 10, 10, 10, 180, 10000]
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, [s for states in all_states for s in states], *params)))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
                                                                  "b_empty(c_bot)",
@@ -132,7 +141,7 @@ if __name__ == '__main__':
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
 
-    filename = "10_instances_5_5_10_10_10_180_100000_1_1_1.json"
+    filename = "300_instances_graph_5_5_10_10_10_180_100000_1_1.json"
 
     @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
     def write_all():
@@ -140,6 +149,6 @@ if __name__ == '__main__':
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
         with open(f"../../generated/{domain_name}/" + filename, "w") as f:
-            json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[0:10])], f)
+            json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[200:300])], f)
 
     write_all()
