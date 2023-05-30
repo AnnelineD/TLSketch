@@ -14,3 +14,8 @@ def feature_vals(dlstates: list[dlplan.State], string_features, factory) -> str:
 
 def feature_file(factory, dlstates: list[dlplan.State], x1, x2, x3, x4, x5, x6, x7):
     return f"{x1}_{x2}_{x3}_{x4}_{x5}_{x6}_{x7}.json"
+
+
+def graph(i: tarski.fstrips.Problem) -> str:
+    return f"{i.domain_name}/graphs/" \
+           f"{'_'.join(c.name for c in i.language.constants())}.json"

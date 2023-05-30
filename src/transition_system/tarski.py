@@ -4,7 +4,7 @@ from tarski.io import PDDLReader
 
 from src.utils.timer import timer
 from .tarski_manipulation import sort_constants, get_ground_actions
-from .transition_system import TransitionSystem, StateStr
+from .transition_system import TransitionSystem, StateStr, GraphSystem
 from .types import *
 
 from src.transition_system.graph import DirectedGraph
@@ -44,7 +44,18 @@ def calc_goal_states(states, goal) -> list[int]:
     return gs
 
 
-def construct_graph(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
+def calc_goal_states_from_str(states: list[StateStr], goal) -> list[int]:
+    gs = list[int]()
+    goal_list = calc_goal_list(goal)
+    for i, s in enumerate(states):
+        if all(str(g) in s for g in goal_list):
+            gs.append(i)
+    return gs
+
+
+@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
+@timer("../../cache/timers/", fm.names.graph)
+def construct_graph(problem: TProblem) -> GraphSystem:
     d = sort_constants(problem.language)
     acts: list[TAction] = get_ground_actions(list(problem.actions.values()), d)
 
@@ -74,22 +85,27 @@ def construct_graph(problem: TProblem) -> tuple[list[TModel], DirectedGraph]:
                 if ns not in checked:
                     todo.append(ns)
 
-    return states, graph
+    return GraphSystem([tmodel_to_state(s) for s in states], graph)
 
 
 def tmodel_to_state(tmodel: TModel) -> StateStr:
-    return [str(a) for a in tmodel.as_atoms()]
+    return {str(a) for a in tmodel.as_atoms()}
+
+
+def compare_states(s1: StateStr, s2: StateStr):
+    return set(s1) == set(s2)
 
 
 @fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), TransitionSystem.deserialize, fm.names.transition_system)
 @timer("../../cache/timers/", fm.names.transition_system)
 def tarski_to_transition_system(instance_problem: TProblem) -> TransitionSystem:
-    tstates, graph = construct_graph(instance_problem)
-    goal_states: list[int] = calc_goal_states(tstates, instance_problem.goal)
+    graph_sys = construct_graph(instance_problem)
+    states = graph_sys.states
+    graph = graph_sys.graph
+
+    goal_states: list[int] = calc_goal_states_from_str(states, instance_problem.goal)
     # add self-loops in goals such that for infinite LTL, we can stay forever in a goal state
     for s in goal_states:
         graph.add(s, s, "goal")
 
-    states = [tmodel_to_state(s) for s in tstates]
-
-    return TransitionSystem(states, graph, tstates.index(instance_problem.init), goal_states)
+    return TransitionSystem(states, graph, states.index(tmodel_to_state(instance_problem.init)), goal_states)
