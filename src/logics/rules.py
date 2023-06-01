@@ -186,5 +186,8 @@ class Sketch:
     def deserialize(cls, rs: list):
         return Sketch([SketchRule.deserialize(r) for r in rs])
 
+    def contains_sketch(self, other):
+        return all(r in self.rules for r in other.rules)
+
 
 

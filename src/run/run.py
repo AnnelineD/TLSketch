@@ -22,6 +22,13 @@ from src.transition_system.transition_system import TransitionSystem
 from src.utils.timer import timer
 import warnings
 warnings.filterwarnings("ignore")
+import re
+
+def sort_files(fs: list[str]):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(fs, key=alphanum_key)
+
 
 def run():
     domain = ts.tarski.load_domain("../../domains/miconic/domain.pddl")
@@ -113,20 +120,28 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
 
         return {f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}
 
-    candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, 1, 1)
-    for the_one_sketch in tqdm(candidate_sketches):
-        checked = True
-        for e, i in enumerate(instance_files):
-            feature_vals = calculate_feature_vals(all_states[e], filtered_features, i.removesuffix(".pddl"))
-            feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
+    max_features = 1
+    max_rules = 2
+    past_sketches = []
+    for n_rules in range(1, max_rules + 1):
+        candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n_rules, max_features)
+        filtered_candidate_sketches = filter(lambda s2: not(any(s2.contains_sketch(s1) for s1 in past_sketches)), candidate_sketches)
+        now_sketches = []
+        for the_one_sketch in tqdm(filtered_candidate_sketches):
+            verified = True
+            for e, i in enumerate(instance_files):
+                feature_vals = calculate_feature_vals(all_states[e], filtered_features, i.removesuffix(".pddl"))
+                feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
 
-            checked = verify_sketch(the_one_sketch, feature_instance, [law1, law2, exists_impl_law, impl_law])
-            if not checked:
-                break
-        if checked:
-            print(the_one_sketch.rules)
-            print()
-            yield the_one_sketch
+                verified = verify_sketch(the_one_sketch, feature_instance, [law1, law2, exists_impl_law, impl_law])
+                if not verified:
+                    break
+            if verified:
+                now_sketches.append(the_one_sketch)
+                print(the_one_sketch.rules)
+                print()
+                yield the_one_sketch
+        past_sketches.extend(now_sketches)
 
 
 if __name__ == '__main__':
@@ -135,13 +150,13 @@ if __name__ == '__main__':
     domain_file = directory + "domain.pddl"
 
     files = os.listdir(directory)
-    files.sort()
+    files = sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
     # instance_files.remove("domain.pddl")
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
 
-    filename = "300_instances_graph_5_5_10_10_10_180_100000_1_1.json"
+    filename = "2_instances_graph_5_5_10_10_10_180_100000_2_1.json"
 
     @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
     def write_all():
@@ -149,6 +164,6 @@ if __name__ == '__main__':
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
         with open(f"../../generated/{domain_name}/" + filename, "w") as f:
-            json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[200:300])], f)
+            json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[0:2])], f)
 
     write_all()
