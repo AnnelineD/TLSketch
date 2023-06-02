@@ -1,5 +1,7 @@
 import json
 import os
+import resource
+import time
 
 import tarski.fstrips
 
@@ -122,9 +124,12 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str], gener
         return {f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}
 
     past_sketches = []
-    for n_rules in range(1, max_rules + 1):
-        candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n_rules, max_features)
-        filtered_candidate_sketches = filter(lambda s2: not(any(s2.contains_sketch(s1) for s1 in past_sketches)), candidate_sketches)
+
+    @timer(f"../../generated/timers/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n: f'rules_{n}.json')
+    def with_n_rules(n):
+        candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
+        filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
+                                             candidate_sketches)
         now_sketches = []
         for the_one_sketch in tqdm(filtered_candidate_sketches):
             verified = True
@@ -137,10 +142,12 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str], gener
                     break
             if verified:
                 now_sketches.append(the_one_sketch)
-                print(the_one_sketch.rules)
-                print()
-                yield the_one_sketch
+                # yield the_one_sketch
         past_sketches.extend(now_sketches)
+        return now_sketches
+
+    for n_rules in range(1, max_rules + 1):
+        yield from with_n_rules(n_rules)
 
 
 if __name__ == '__main__':
@@ -158,7 +165,7 @@ if __name__ == '__main__':
     max_features = 1
     max_rules = 2
 
-    filename = f"2_instances_graph_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
+    filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
     @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
     def write_all():
