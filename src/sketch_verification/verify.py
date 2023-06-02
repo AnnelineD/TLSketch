@@ -31,7 +31,6 @@ def check_file(filepath: str, laws: list[Law]):
     pynusmv.glob.compute_model()
     fsm = pynusmv.glob.prop_database().master.bddFsm
 
-    from pynusmv.mc import explain, eval_ctl_spec
 
 
     for l in laws:
