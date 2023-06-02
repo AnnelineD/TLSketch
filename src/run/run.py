@@ -78,7 +78,8 @@ def cache_all_transition_systems(domain_file: str, instance_files: list[str]):
     print("Done with transition systems")
 
 
-def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
+def run_on_multiple_instances(domain_file: str, instance_files: list[str], generator_params: list[int], max_features, max_rules):
+    assert(len(generator_params) == 7)
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
     domain_name = domain.domain_name
@@ -101,7 +102,7 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
                                     lambda x: x, names.feature_file)(timer(f"../../cache/timers{domain_name}/features/", names.feature_file)(generator.generate))
-    params = [5, 5, 10, 10, 10, 180, 10000]
+    params = generator_params
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, [s for states in all_states for s in states], *params)))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
                                                                  "b_empty(c_bot)",
@@ -120,8 +121,6 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str]):
 
         return {f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}
 
-    max_features = 1
-    max_rules = 2
     past_sketches = []
     for n_rules in range(1, max_rules + 1):
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n_rules, max_features)
@@ -155,8 +154,11 @@ if __name__ == '__main__':
     # instance_files.remove("domain.pddl")
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
+    generator_params = [5, 5, 10, 10, 10, 180, 10000]
+    max_features = 1
+    max_rules = 2
 
-    filename = "2_instances_graph_5_5_10_10_10_180_100000_2_1.json"
+    filename = f"2_instances_graph_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
     @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
     def write_all():
@@ -164,6 +166,7 @@ if __name__ == '__main__':
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
         with open(f"../../generated/{domain_name}/" + filename, "w") as f:
-            json.dump([s.serialize() for s in run_on_multiple_instances(domain_file, instance_files[0:2])], f)
+            json.dump([s.serialize() for s in
+                       run_on_multiple_instances(domain_file, instance_files[0:2], generator_params, max_features, max_rules)], f)
 
     write_all()
