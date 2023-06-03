@@ -1,4 +1,5 @@
 .idea
 scratch.py
 /cache
-/domains
+/generated/
+/data/
