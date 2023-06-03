@@ -123,31 +123,37 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str], gener
 
         return {f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}
 
-    past_sketches = []
-
-    @timer(f"../../generated/timers/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n: f'rules_{n}.json')
-    def with_n_rules(n):
+    @cache_to_file(f"../../generated/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/",
+                   serializer=lambda ws_n: dict(working=[ws.serialize() for ws in ws_n[0]], number_tested=ws_n[1]),
+                   deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]], d["number_tested"]),
+                   namer=lambda n, _: f'rules_{n}.json')
+    @timer(f"../../generated/timers/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
+    def with_n_rules(n, past_sketches):
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
         filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
                                              candidate_sketches)
-        now_sketches = []
-        for the_one_sketch in tqdm(filtered_candidate_sketches):
+        working_sketches = []
+        sketch_number = 0
+        for sketch in tqdm(filtered_candidate_sketches):
+            sketch_number += 1
             verified = True
             for e, i in enumerate(instance_files):
                 feature_vals = calculate_feature_vals(all_states[e], filtered_features, i.removesuffix(".pddl"))
                 feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
 
-                verified = verify_sketch(the_one_sketch, feature_instance, [law1, law2, exists_impl_law, impl_law])
+                verified = verify_sketch(sketch, feature_instance, [law1, law2, exists_impl_law, impl_law])
                 if not verified:
                     break
             if verified:
-                now_sketches.append(the_one_sketch)
-                # yield the_one_sketch
-        past_sketches.extend(now_sketches)
-        return now_sketches
+                working_sketches.append(sketch)
+        return working_sketches, sketch_number
 
+    past_sketches = []
     for n_rules in range(1, max_rules + 1):
-        yield from with_n_rules(n_rules)
+        working_sketches, tested_sketches = with_n_rules(n_rules, past_sketches)
+        past_sketches.extend(working_sketches)
+
+    print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 
 
 if __name__ == '__main__':
@@ -161,8 +167,16 @@ if __name__ == '__main__':
     # instance_files.remove("domain.pddl")
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
-    generator_params = [5, 5, 10, 10, 10, 180, 10000]
-    max_features = 1
+    """concept_complexity_limit: int = 9, role_complexity_limit: int = 9, boolean_complexity_limit: int = 9, count_numerical_complexity_limit: int = 9, distance_numerical_complexity_limit: int = 9, time_limit: int = 3600, feature_limit: int = 10000) -> List[str] """
+    # final
+    # generator_params = [8, 8, 8, 8, 8, 3600, 10000]
+    # max_features = 4
+    # max_rules = 6
+
+    # blocks clear Drexler params
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
     max_rules = 2
 
     filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
@@ -172,8 +186,5 @@ if __name__ == '__main__':
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
-        with open(f"../../generated/{domain_name}/" + filename, "w") as f:
-            json.dump([s.serialize() for s in
-                       run_on_multiple_instances(domain_file, instance_files[0:2], generator_params, max_features, max_rules)], f)
-
+        run_on_multiple_instances(domain_file, instance_files[:10] + instance_files[200:210], generator_params, max_features, max_rules)
     write_all()
