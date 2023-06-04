@@ -157,7 +157,7 @@ def run_on_multiple_instances(domain_file: str, instance_files: list[str], gener
 
 
 if __name__ == '__main__':
-    domain_name = "blocks_4_clear"
+    domain_name = "childsnack"
     directory = f"../../domains/{domain_name}/"
     domain_file = directory + "domain.pddl"
 
@@ -174,10 +174,10 @@ if __name__ == '__main__':
     # max_rules = 6
 
     # blocks clear Drexler params
-    complexity = 4
+    complexity = 5
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
-    max_features = 2
-    max_rules = 2
+    max_features = 1
+    max_rules = 1
 
     filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
@@ -186,5 +186,5 @@ if __name__ == '__main__':
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
-        run_on_multiple_instances(domain_file, instance_files[:10] + instance_files[200:210], generator_params, max_features, max_rules)
+        run_on_multiple_instances(domain_file, instance_files[:2] + instance_files[5:7] + instance_files[10:12] + instance_files[15:17], generator_params, max_features, max_rules)
     write_all()

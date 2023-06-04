@@ -53,8 +53,8 @@ def calc_goal_states_from_str(states: list[StateStr], goal) -> list[int]:
     return gs
 
 
-@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
-@timer("../../cache/timers/", fm.names.graph)
+#@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
+#@timer("../../cache/timers/", fm.names.graph)
 def construct_graph(problem: TProblem) -> GraphSystem:
     d = sort_constants(problem.language)
     acts: list[TAction] = get_ground_actions(list(problem.actions.values()), d)
