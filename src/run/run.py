@@ -80,7 +80,7 @@ def cache_all_transition_systems(domain_file: str, instance_files: list[str]):
     print("Done with transition systems")
 
 
-def run_on_multiple_instances(domain_file: str, instance_files: list[str], generator_params: list[int], max_features, max_rules):
+def run_on_multiple_instances(directory: str, domain_file: str, instance_files: list[str], generator_params: list[int], max_features, max_rules):
     assert(len(generator_params) == 7)
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
@@ -189,5 +189,5 @@ if __name__ == '__main__':
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
-        run_on_multiple_instances(domain_file, instance_files[:10] + instance_files[20:30], generator_params, max_features, max_rules)
+        run_on_multiple_instances(directory, domain_file, instance_files[:10] + instance_files[20:30], generator_params, max_features, max_rules)
     write_all()

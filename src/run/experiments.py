@@ -21,7 +21,7 @@ def all_blocks_on():
     file_dir = f"../../generated/{domain_name}/"
     if not os.path.isdir(file_dir):
         os.mkdir(file_dir)
-    run.run_on_multiple_instances(domain_file, files_3[:10] + files_4[:10], generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10], generator_params, max_features, max_rules)
 
 
 def all_gripper():
@@ -41,7 +41,7 @@ def all_gripper():
     file_dir = f"../../generated/{domain_name}/"
     if not os.path.isdir(file_dir):
         os.mkdir(file_dir)
-    run.run_on_multiple_instances(domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
 
 
 """https://www.geeksforgeeks.org/finding-duplicate-files-with-python/"""
