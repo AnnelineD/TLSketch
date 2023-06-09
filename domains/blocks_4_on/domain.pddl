@@ -1,4 +1,4 @@
-(define (domain blocksworld)
+(define (domain blocksworld-on)
   (:requirements :strips)
 (:predicates (clear ?x)
              (on-table ?x)
