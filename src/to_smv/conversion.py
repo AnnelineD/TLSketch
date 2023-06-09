@@ -1,4 +1,4 @@
-from src.logics.rules import LTLSketch
+from src.logics.rules import LTLSketch, ExpandedSketch
 #from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
@@ -36,7 +36,7 @@ def valuations_to_smv(vals: dict[str, list[Union[bool, int]]], goals: list[int],
     nl = '\n'
     return f"DEFINE \n " \
            f"{nl.join(f''' {tab}{repr_feature_str(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{e}: {str(s).upper()};' for e, s in enumerate(vals[fn]))} {nl + tab}esac;''' for fn in features)}\n" \
-           f"{tab}goal := state in {{{', '.join({f's{i}' for i in goals})}}};"
+           f"{tab}goal := state in {{{', '.join(f's{i}' for i in goals)}}};"
 
 """
 def rules_to_smv(rules: list[LTLRule]) -> str:
@@ -44,9 +44,20 @@ def rules_to_smv(rules: list[LTLRule]) -> str:
 """
 
 
-def rules_to_smv(ltl_sketch: LTLSketch) -> str:
-    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)}; \n \te{i} := {ltl_to_smv(r.effects)};" for i, r in enumerate(ltl_sketch.rules)])
+def rules_to_smv(exp_sketch: ExpandedSketch) -> str:
+    return '\n'.join([f"\tc{i} := {' & '.join(repr_feature_vars(c) for c in r.conditions)}; \n "
+                      f"\te{i} := {' & '.join(repr_feature_vars(e) for e in r.effects)};"
+                      for i, r in enumerate(exp_sketch.rules)])
 
+
+def repr_feature_vars(fv: FeatureVar):
+    match fv:
+        case BooleanVar(f, True, o):
+            return repr_feature_str(f)
+        case BooleanVar(f, False, o):
+            return f"!{repr_feature_str(f)}"
+        case NumericalVar(f, v, o):
+            return f"{repr_feature_str(f)}{o}{v}"
 
 def ltl_to_smv(ltl: LTLFormula) -> str:
     match ltl:

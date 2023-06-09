@@ -3,7 +3,7 @@ import unittest
 import ltl
 import src.transition_system as ts
 from src.logics.conditions_effects import CPositive
-from src.logics.rules import LTLRule
+from src.logics.rules import LTLRule, ExpandedRule
 from src.sketch_verification.feature_instance import FeatureInstance
 from src.to_smv.conversion import *
 from src.to_smv.make_smv import to_smv_format
@@ -17,7 +17,8 @@ class SMVTest(unittest.TestCase):
         self.g.add(n0, n1, "lower")
         self.g.add(n1, n0, "raise")
 
-        self.sketch = LTLSketch([LTLRule(BooleanVar("b0", True), ltl.Or(NumericalVar("n0", 0), NumericalVar("n0", 1)))])
+        self.sketch = LTLSketch([LTLRule(BooleanVar("b0", True, "="), ltl.Or(NumericalVar("n0", 0, "="), NumericalVar("n0", 1, "=")))])
+        self.exp_sketch = ExpandedSketch([ExpandedRule([BooleanVar("b0", False, "=")], [NumericalVar("n0", 0, "<"), BooleanVar("b0", True, "=")])])
 
     def test_to_smv_format(self):
         smv = """MODULE main
@@ -39,8 +40,8 @@ DEFINE
 		state = s1: 1; 
 	esac;
 	goal := state in {s0, s1};
-	c0 := b0=TRUE; 
- 	e0 := (n0=0 | n0=1);
+	c0 := !b0; 
+ 	e0 := n0<0 & b0;
 """
         smv_option_2 = """MODULE main
 VAR 
@@ -61,12 +62,12 @@ DEFINE
 		state = s1: TRUE; 
 	esac;
 	goal := state in {s0, s1};
-	c0 := b0=TRUE; 
- 	e0 := (n0=0 | n0=1);
+	c0 := !b0; 
+ 	e0 := n0<0 & b0;
 """
-        # print(to_smv_format(FeatureInstance(self.g, 0, [0, 1], {"n0": [0, 1], "b0": {False, True}}), self.sketch))
+        print(to_smv_format(FeatureInstance(self.g, 0, [0, 1], {"n0": [0, 1], "b0": {False, True}, "b1": {False, True}}), self.exp_sketch))
         # self.assertEqual(smv, to_smv_format(FeatureInstance(self.g, 0, [0, 1], {"n0": [0, 1], "b0": {False, True}}), self.sketch))
-        self.assertIn(to_smv_format(FeatureInstance(self.g, 0, [0, 1], {"n0": [0, 1], "b0": {False, True}}), self.sketch), [smv, smv_option_2])
+        self.assertIn(to_smv_format(FeatureInstance(self.g, 0, [0, 1], {"n0": [0, 1], "b0": {False, True}, "b1": {False, True}}), self.exp_sketch), [smv, smv_option_2])
 
 
 class ToSMVComponentsTest(unittest.TestCase):

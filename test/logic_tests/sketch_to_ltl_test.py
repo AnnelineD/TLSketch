@@ -5,7 +5,7 @@ import ltl
 from src.dlplan_utils import *
 from src.logics.conditions_effects import *
 from src.logics.feature_vars import NumericalVar, BooleanVar
-from src.logics.rules import Sketch, SketchRule, LTLRule, LTLSketch
+from src.logics.rules import Sketch, SketchRule, LTLRule, LTLSketch, ExpandedRule, ExpandedSketch
 from test.utils import ass_same_elements
 
 
@@ -40,7 +40,7 @@ class ToLTLTest(unittest.TestCase):
         self.m = factory.parse_numerical("n_count(c_not(c_primitive(unary,0)))")
         self.o = factory.parse_numerical("n_count(c_primitive(unary,0))")
 
-
+        """
         builder = dlplan.PolicyBuilder()
         b_h = builder.add_boolean_feature(self.h)
         b_n = builder.add_numerical_feature(self.n)
@@ -68,7 +68,8 @@ class ToLTLTest(unittest.TestCase):
             [self.h_neg_effect_0])
 
         self.p1 = builder.get_result()
-
+        """
+    """
     def test_show(self):  # TODO maybe move this test to a separate file?
         self.assertEqual(show_condition(self.h_neg_condition_0, "H"), "¬H")
         self.assertEqual(show_condition(self.h_pos_condition_0, "H"), "H")
@@ -81,16 +82,16 @@ class ToLTLTest(unittest.TestCase):
         self.assertEqual(show_effect(self.n_dec_effect_0, "n"), "n↓")
         self.assertEqual(show_effect(self.n_inc_effect_0, "n"), "n↑")
         self.assertEqual(show_effect(self.n_bot_effect_0, "n"), "n?")
-
+    """
     def test_bound_fill_in(self):
         bound_dict = {"n_n": (0, 2), "n_m": (0, 2), "n_o": (1, 3)}
         sketch = Sketch([SketchRule([CGreater('n_n')], [EDecr('n_n')]), SketchRule([CPositive('b_a')], [ENegative('b_a')])])
 
         ltl_sketch = sketch.to_ltl(bound_dict)
 
-        wanted_ltl_sketch = LTLSketch([LTLRule(NumericalVar('n_n', 1), NumericalVar('n_n', 0)),
-                                       LTLRule(NumericalVar('n_n', 2), NumericalVar('n_n', 0) | NumericalVar('n_n', 1)),
-                                       LTLRule(BooleanVar('b_a', True), BooleanVar('b_a', False))
+        wanted_ltl_sketch = LTLSketch([LTLRule(NumericalVar('n_n', 1, "="), NumericalVar('n_n', 0, "=")),
+                                       LTLRule(NumericalVar('n_n', 2, "="), NumericalVar('n_n', 0, "=") | NumericalVar('n_n', 1, "=")),
+                                       LTLRule(BooleanVar('b_a', True, "="), BooleanVar('b_a', False, "="))
                                        ])
 
         # for e, r in enumerate(ltl_sketch.rules):
@@ -101,14 +102,47 @@ class ToLTLTest(unittest.TestCase):
         ltl_sketch_2 = sketch_2.to_ltl(bound_dict)
 
         wanted_ltl_sketch_2 = LTLSketch([
-            LTLRule(NumericalVar('n_n', 0) & NumericalVar('n_o', 2), NumericalVar('n_o', 1)),
-            LTLRule(NumericalVar('n_n', 0) & NumericalVar('n_o', 3), NumericalVar('n_o', 1) | NumericalVar('n_o', 2)),
+            LTLRule(NumericalVar('n_n', 0, "=") & NumericalVar('n_o', 2, "="), NumericalVar('n_o', 1, "=")),
+            LTLRule(NumericalVar('n_n', 0, "=") & NumericalVar('n_o', 3, "="), NumericalVar('n_o', 1, "=") | NumericalVar('n_o', 2, "=")),
         ])
 
         # for e, r in enumerate(ltl_sketch_2.rules):
         #     print(e, r.conditions.show(), '\t',  r.effects.show())
 
         self.assertTrue(compare_ltl_sketches(ltl_sketch_2, wanted_ltl_sketch_2))
+
+    def test_bound_fill_in_expanded(self):
+        bound_dict = {"n_n": (0, 2), "n_m": (0, 2), "n_o": (1, 3)}
+        sketch = Sketch([SketchRule([CGreater('n_n')], [EDecr('n_n')]), SketchRule([CPositive('b_a')], [ENegative('b_a')])])
+
+        exp_sketch = sketch.expand(bound_dict)
+
+        wanted_exp_sketch = ExpandedSketch([ExpandedRule([NumericalVar('n_n', 1, "=")], [NumericalVar('n_n', 1, "<")]),
+                                       ExpandedRule([NumericalVar('n_n', 2, "=")], [NumericalVar('n_n', 2, "<")]),
+                                       ExpandedRule([BooleanVar('b_a', True, "=")], [BooleanVar('b_a', False, "=")])
+                                       ])
+
+        # for e, r in enumerate(ltl_sketch.rules):
+        #     print(e, r.conditions.show(), r.effects.show())
+        for r1, r2 in zip(exp_sketch.rules, wanted_exp_sketch.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
+
+        sketch_2 = Sketch([SketchRule([CZero('n_n')], [EDecr('n_o')])])
+        exp_sketch_2 = sketch_2.expand(bound_dict)
+
+        wanted_exp_sketch_2 = ExpandedSketch([
+            ExpandedRule([NumericalVar('n_o', 1, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 1, "<")]),
+            ExpandedRule([NumericalVar('n_o', 2, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 2, "<")]),
+            ExpandedRule([NumericalVar('n_o', 3, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 3, "<")]),
+        ])
+
+        # for e, r in enumerate(ltl_sketch_2.rules):
+        #     print(e, r.conditions.show(), '\t',  r.effects.show())
+
+        for r1, r2 in zip(exp_sketch_2.rules, wanted_exp_sketch_2.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
 
 
 

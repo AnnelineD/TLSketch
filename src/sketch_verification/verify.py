@@ -9,19 +9,19 @@ from ..sketch_verification import logic_translation
 
 def verify_sketch(sketch: Sketch, instance: FeatureInstance, abstract_laws: list[AbstractLaw]) -> bool:
     bounds = instance.get_bounds()
-    ltl_sketch: LTLSketch = sketch.to_ltl(bounds)
+    exp_sketch: ExpandedSketch = sketch.expand(bounds)
     # if instance.init in instance.goal_states:
     #    return True
-    if not ltl_sketch.rules:
+    if not exp_sketch.rules:
         return False
-    laws = [law.expand(ltl_sketch.n_rules()) for law in abstract_laws]
-    return verification(ltl_sketch, instance, laws)
+    laws = [law.expand(exp_sketch.n_rules()) for law in abstract_laws]
+    return verification(exp_sketch, instance, laws)
 
 
-def verification(ltl_sketch, instance, laws) -> bool:
+def verification(exp_sketch: ExpandedSketch, instance, laws) -> bool:
     filepath = "temp.smv"
     with open(filepath, 'w') as f:
-        f.write(to_smv_format(instance, ltl_sketch))
+        f.write(to_smv_format(instance, exp_sketch))
     return check_file(filepath, laws)
 
 
