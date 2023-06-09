@@ -78,10 +78,10 @@ def possible_effects(condition: list[Condition]) -> Iterator[list[Effect]]:
         match c:
             case CZero(x): return [EIncr(x), ENEqual(x), ENAny(x)]
             case CGreater(x): return [EIncr(x), EDecr(x), ENEqual(x), ENAny(x)]
-            case CNAny(x): return [EIncr(x), EDecr(x), ENEqual(x), ENAny(x)]
+            case CNAny(x): return [EIncr(x), EDecr(x), ENEqual(x)]
             case CNegative(x): return [EPositive(x), EBEqual(x), EBAny(x)]
             case CPositive(x): return [ENegative(x), EBEqual(x), EBAny(x)]
-            case CBAny(x): return [EPositive(x), ENegative(x), EBEqual(x), EBAny(x)]
+            case CBAny(x): return [EPositive(x), ENegative(x), EBEqual(x)]
 
     for es in itertools.product(*map(match_c, condition)):
         if not all(isinstance(ef, ENAny) or isinstance(ef, EBAny) for ef in es):
@@ -120,7 +120,7 @@ def generate_rules(boolean_features: list[str], numerical_features: list[str]) -
 
 
 def generate_sketches(boolean_features: list[str], numerical_features: list[str], max_rules=3, max_features=3) -> Iterator[Sketch]:
-    fsets = get_feature_sets(boolean_features, numerical_features, max_features)  # TODO also sets of size < max_features
+    fsets = {s for i in range(1, max_features + 1) for s in get_feature_sets(boolean_features, numerical_features, i)}  # TODO also sets of size < max_features
     for bfs, nfs in fsets:
         rs = generate_rules(bfs, nfs)
         rs_combs = all_combinations(rs, max_rules)
