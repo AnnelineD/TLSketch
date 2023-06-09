@@ -37,13 +37,13 @@ def rules_followed_then_goal(n) -> ltl.LTLFormula:
 
 
 def ctl_rule_cannot_lead_into_dead(n) -> ctl.CTLFormula:
-    one_rule = [ctl.AG(ctl.Then(c, ctl.Not(ctl.EF(ctl.And(e, ctl.Not(ctl.EF(ctl_goal))))))) for c, e in ctl_rules(n)]
+    one_rule = [ctl.AG(ctl.Then(c, ctl.Not(ctl.EX(ctl.EF(ctl.And(e, ctl.Not(ctl.EF(ctl_goal)))))))) for c, e in ctl_rules(n)]
     if one_rule: return reduce(ctl.And, one_rule)
     else: return ctl.Top()
 
 
 def ctl_rule_can_be_followed(n) -> ctl.CTLFormula:
-    follow_in_future = [ctl.And(c, ctl.EF(ctl.And(e, ctl.EF(ctl_goal)))) for c, e in ctl_rules(n)]
+    follow_in_future = [ctl.And(c, ctl.EX(ctl.EF(ctl.And(e, ctl.EF(ctl_goal))))) for c, e in ctl_rules(n)]
     follow_one_of_rules = reduce(ctl.Or, follow_in_future, ctl.Bottom())
 
     return ctl.AG(ctl.Or(ctl.Or(follow_one_of_rules, ctl_goal), ctl.Not(ctl.EF(ctl_goal))))
