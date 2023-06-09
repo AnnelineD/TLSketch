@@ -27,25 +27,26 @@ def verification(exp_sketch: ExpandedSketch, instance, laws) -> bool:
 
 def check_file(filepath: str, laws: list[Law]):
     pynusmv.init.init_nusmv()
-    pynusmv.glob.load_from_file(filepath=filepath)
-    pynusmv.glob.compute_model()
-    fsm = pynusmv.glob.prop_database().master.bddFsm
+
+    try:
+        pynusmv.glob.load_from_file(filepath=filepath)
+        pynusmv.glob.compute_model()
+        fsm = pynusmv.glob.prop_database().master.bddFsm
 
 
 
-    for l in laws:
-        match l.formula:
-            case f if isinstance(f, CTLFormula):
-                if pynusmv.mc.check_ctl_spec(fsm, logic_translation.ctl_to_input(l.formula)) != l.truth:
-                    pynusmv.init.deinit_nusmv()
-                    return False
-            case f if isinstance(f, LTLFormula):
-                truth = pynusmv.mc.check_ltl_spec(logic_translation.ltl_to_input(l.formula))
-                if truth != l.truth:
-                    #print(expl)
-                    pynusmv.init.deinit_nusmv()
-                    return False
+        for l in laws:
+            match l.formula:
+                case f if isinstance(f, CTLFormula):
+                    if pynusmv.mc.check_ctl_spec(fsm, logic_translation.ctl_to_input(l.formula)) != l.truth:
+                        return False
+                case f if isinstance(f, LTLFormula):
+                    truth = pynusmv.mc.check_ltl_spec(logic_translation.ltl_to_input(l.formula))
+                    if truth != l.truth:
+                        #print(expl)
+                        return False
 
-    pynusmv.init.deinit_nusmv()
+    finally:
+        pynusmv.init.deinit_nusmv()
     return True
 
