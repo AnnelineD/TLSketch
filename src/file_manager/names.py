@@ -6,6 +6,9 @@ def transition_system(i: tarski.fstrips.Problem) -> str:
     return f"{i.domain_name}/transition_systems/" \
            f"{i.name}.json"
 
+def transition_system_timer(i: tarski.fstrips.Problem) -> str:
+    return f"{i.domain_name}/timers/transition_systems/" \
+           f"{i.name}.json"
 
 def feature_vals(dlstates: list[dlplan.State], string_features, factory) -> str:
     inst: dlplan.InstanceInfo = dlstates[0].get_instance_info()
@@ -18,4 +21,9 @@ def feature_file(factory, dlstates: list[dlplan.State], x1, x2, x3, x4, x5, x6, 
 
 def graph(i: tarski.fstrips.Problem) -> str:
     return f"{i.domain_name}/graphs/" \
+           f"{'_'.join(c.name for c in i.language.constants())}.json"
+
+
+def graph_timer(i: tarski.fstrips.Problem) -> str:
+    return f"{i.domain_name}/timers/graphs/" \
            f"{'_'.join(c.name for c in i.language.constants())}.json"

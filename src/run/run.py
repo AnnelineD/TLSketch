@@ -103,7 +103,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
     generator = construct_feature_generator()
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
-                                    lambda x: x, names.feature_file)(timer(f"../../cache/timers{domain_name}/features/", names.feature_file)(generator.generate))
+                                    lambda x: x, names.feature_file)(timer(f"../../cache/{domain_name}/timers/features/", names.feature_file)(generator.generate))
     params = generator_params
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, [s for states in all_states for s in states], *params)))      # TODO check these parameters
     filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
@@ -115,7 +115,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
     nums = [f for f in filtered_features if f.startswith("n_")]
 
     @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, lambda x, y, z: f"{z}.json")
-    @timer(f"../../cache/timers/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x, y, z: f"{z}.json")
+    @timer(f"../../cache/{domain_name}/timers/features/{'_'.join(map(str, params))}/", lambda x, y, z: f"{z}.json")
     def calculate_feature_vals(sts: list[dlplan.State], fs: list[str], filename) -> dict:
         fact = dlplan.SyntacticElementFactory(sts[0].get_instance_info().get_vocabulary_info()) # TODO why doesn't it work with the given factory?
         boolean_features = [fact.parse_boolean(f) for f in fs if f.startswith("b_")]
@@ -127,7 +127,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                    serializer=lambda ws_n: dict(working=[ws.serialize() for ws in ws_n[0]], number_tested=ws_n[1], stable=ws_n[2]),
                    deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]], d["number_tested"], d["stable"]),
                    namer=lambda n, _: f'rules_{n}.json')
-    @timer(f"../../generated/timers/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
+    @timer(f"../../generated/{domain_name}/timers/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
     def with_n_rules(n, past_sketches):
         changes = set()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
-    @timer(f"../../generated/timers/{domain_name}/", lambda: filename)
+    @timer(f"../../generated/{domain_name}/timers/", lambda: filename)
     def write_all():
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):

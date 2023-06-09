@@ -54,7 +54,7 @@ def calc_goal_states_from_str(states: list[StateStr], goal) -> list[int]:
 
 
 @fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
-@timer("../../cache/timers/", fm.names.graph)
+@timer("../../cache/", fm.names.graph_timer)
 def construct_graph(problem: TProblem) -> GraphSystem:
     d = sort_constants(problem.language)
     acts: list[TAction] = get_ground_actions(list(problem.actions.values()), d)
@@ -97,7 +97,7 @@ def compare_states(s1: StateStr, s2: StateStr):
 
 
 @fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), TransitionSystem.deserialize, fm.names.transition_system)
-@timer("../../cache/timers/", fm.names.transition_system)
+@timer("../../cache/", fm.names.transition_system_timer)
 def tarski_to_transition_system(instance_problem: TProblem) -> TransitionSystem:
     graph_sys = construct_graph(instance_problem)
     states = graph_sys.states
