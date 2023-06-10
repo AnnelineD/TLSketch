@@ -136,7 +136,8 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         changes = set()
         timed_out_sketches = list[(Sketch, int, str)]()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
-        filtered_candidate_sketches = candidate_sketches
+        filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
+                                             candidate_sketches)
         working_sketches = []
         sketch_number = 0
         for sketch in tqdm(filtered_candidate_sketches):
@@ -165,10 +166,9 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
     with Pool(processes=1) as p:
         past_sketches = []
-        # for n_rules in range(1, max_rules + 1):
-        n_rules = 2
-        working_sketches, timed_out, tested_sketches, stable = with_n_rules(n_rules, past_sketches)
-        past_sketches.extend(working_sketches)
+        for n_rules in range(1, max_rules + 1):
+            working_sketches, timed_out, tested_sketches, stable = with_n_rules(n_rules, past_sketches)
+            past_sketches.extend(working_sketches)
 
     print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 
