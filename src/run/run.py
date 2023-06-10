@@ -126,10 +126,11 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
     @cache_to_file(f"../../generated/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/",
                    serializer=lambda ws_n: dict(working=[ws.serialize() for ws in ws_n[0]],
                                                 timed_out=[(s.serialize(), n, i) for s, n, i in ws_n[1]],
-                                                number_tested=ws_n[2], stable=ws_n[3]),
+                                                number_tested=ws_n[2], stable=ws_n[3],
+                                                instance_files=ws_n[4], timings=ws_n[5]),
                    deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]],
                                            [(Sketch.deserialize(r), n, i) for r, n, i in d['timed_out']],
-                                           d["number_tested"], d["stable"]),
+                                           d["number_tested"], d["stable"], d["instance_files"], d["timings"]),
                    namer=lambda n, _: f'rules_{n}.json')
     @timer(f"../../generated/{domain_name}/timers/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
     def with_n_rules(n, past_sketches):
@@ -140,34 +141,45 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                                              candidate_sketches)
         working_sketches = []
         sketch_number = 0
+        timings = []
         for sketch in tqdm(filtered_candidate_sketches):
             sketch_number += 1
             verified = True
+            #(time, accepted)
+            timings_sketch = list[(float, int)]()
+
             for e, i in enumerate(instance_files):
                 feature_vals = calculate_feature_vals(all_states[e], filtered_features, i.removesuffix(".pddl"))
                 feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
 
                 aresult = p.apply_async(func=verify_sketch, args=(sketch, feature_instance, [law1, law2, impl_law]))
 
+                starttime = time.monotonic_ns()
                 try:
-                    verified = aresult.get(1.)
+                    verified = aresult.get(60)
+                    endtime = time.monotonic_ns()
                 except TimeoutError:
+                    endtime = time.monotonic_ns()
                     timed_out_sketches.append((sketch, e, i))
                     print("time out!", sketch_number, i)
+                    timings_sketch.append((endtime - starttime, -1))
                     break
                     # logica voor niet op tijd
 
                 if not verified:
                     changes.add((e, i))
+                    timings_sketch.append((endtime - starttime, 0))
                     break
+                timings_sketch.append((endtime - starttime, 1))
             if verified:
                 working_sketches.append(sketch)
-        return working_sketches, timed_out_sketches, sketch_number, list(changes)
+            timings.append(timings_sketch)
+        return working_sketches, timed_out_sketches, sketch_number, list(changes), instance_files, timings
 
     with Pool(processes=1) as p:
         past_sketches = []
         for n_rules in range(1, max_rules + 1):
-            working_sketches, timed_out, tested_sketches, stable = with_n_rules(n_rules, past_sketches)
+            working_sketches, *_ = with_n_rules(n_rules, past_sketches)
             past_sketches.extend(working_sketches)
 
     print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
@@ -194,7 +206,7 @@ if __name__ == '__main__':
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
-    max_rules = 1
+    max_rules = 2
 
     filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
@@ -203,5 +215,5 @@ if __name__ == '__main__':
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
-        run_on_multiple_instances(directory, domain_file, instance_files[:10] + instance_files[20:30], generator_params, max_features, max_rules)
+        run_on_multiple_instances(directory, domain_file, instance_files[:4], generator_params, max_features, max_rules)
     write_all()
