@@ -2,13 +2,14 @@ import json
 import os
 import resource
 import time
+from multiprocessing import Pool, TimeoutError
 
+from tqdm import tqdm
+import dlplan
 import tarski.fstrips
 
 import src.sketch_generation.generation
 import src.transition_system as ts
-import dlplan
-
 import src.file_manager.names as names
 from src.logics.conditions_effects import Feature
 from src.logics.rules import Sketch
@@ -17,7 +18,6 @@ from src.file_manager.cashing import cache_to_file
 from src.sketch_verification.feature_instance import FeatureInstance
 from src.sketch_verification.verify import verify_sketch
 from src.sketch_verification.laws import law1, law2, law3, simple_law, impl_law, exists_impl_law
-from tqdm import tqdm
 import src.file_manager as fm
 from src.transition_system.transition_system import TransitionSystem
 
@@ -124,15 +124,19 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         return {f.compute_repr(): [f.evaluate(s) for s in sts] for f in numerical_features + boolean_features}
 
     @cache_to_file(f"../../generated/{domain_name}/{'_'.join(map(str, generator_params))}_{max_features}/",
-                   serializer=lambda ws_n: dict(working=[ws.serialize() for ws in ws_n[0]], number_tested=ws_n[1], stable=ws_n[2]),
-                   deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]], d["number_tested"], d["stable"]),
+                   serializer=lambda ws_n: dict(working=[ws.serialize() for ws in ws_n[0]],
+                                                timed_out=[(s.serialize(), n, i) for s, n, i in ws_n[1]],
+                                                number_tested=ws_n[2], stable=ws_n[3]),
+                   deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]],
+                                           [(Sketch.deserialize(r), n, i) for r, n, i in d['timed_out']],
+                                           d["number_tested"], d["stable"]),
                    namer=lambda n, _: f'rules_{n}.json')
     @timer(f"../../generated/{domain_name}/timers/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
     def with_n_rules(n, past_sketches):
         changes = set()
+        timed_out_sketches = list[(Sketch, int, str)]()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
-        filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
-                                             candidate_sketches)
+        filtered_candidate_sketches = candidate_sketches
         working_sketches = []
         sketch_number = 0
         for sketch in tqdm(filtered_candidate_sketches):
@@ -142,25 +146,35 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                 feature_vals = calculate_feature_vals(all_states[e], filtered_features, i.removesuffix(".pddl"))
                 feature_instance = FeatureInstance(systems[e].graph, systems[e].init, systems[e].goals, feature_vals)
 
-                verified = verify_sketch(sketch, feature_instance, [law1, law2, impl_law])
+                aresult = p.apply_async(func=verify_sketch, args=(sketch, feature_instance, [law1, law2, impl_law]))
+
+                try:
+                    verified = aresult.get(1.)
+                except TimeoutError:
+                    timed_out_sketches.append((sketch, e, i))
+                    print("time out!", sketch_number, i)
+                    break
+                    # logica voor niet op tijd
 
                 if not verified:
                     changes.add((e, i))
                     break
             if verified:
                 working_sketches.append(sketch)
-        return working_sketches, sketch_number, list(changes)
+        return working_sketches, timed_out_sketches, sketch_number, list(changes)
 
-    past_sketches = []
-    for n_rules in range(1, max_rules + 1):
-        working_sketches, tested_sketches, stable = with_n_rules(n_rules, past_sketches)
+    with Pool(processes=1) as p:
+        past_sketches = []
+        # for n_rules in range(1, max_rules + 1):
+        n_rules = 2
+        working_sketches, timed_out, tested_sketches, stable = with_n_rules(n_rules, past_sketches)
         past_sketches.extend(working_sketches)
 
     print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 
 
 if __name__ == '__main__':
-    domain_name = "blocks_4_clear"
+    domain_name = "gripper"
     directory = f"../../domains/{domain_name}/"
     domain_file = directory + "domain.pddl"
 
