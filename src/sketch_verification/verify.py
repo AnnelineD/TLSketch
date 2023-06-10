@@ -18,21 +18,16 @@ def verify_sketch(sketch: Sketch, instance: FeatureInstance, abstract_laws: list
     return verification(exp_sketch, instance, laws)
 
 
-def verification(exp_sketch: ExpandedSketch, instance, laws) -> bool:
-    filepath = "temp.smv"
-    with open(filepath, 'w') as f:
-        f.write(to_smv_format(instance, exp_sketch))
-    return check_file(filepath, laws)
+def verification(ltl_sketch, instance, laws) -> bool:
+    return check_file(to_smv_format(instance, ltl_sketch), laws)
 
 
-def check_file(filepath: str, laws: list[Law]):
+def check_file(filecontent: str, laws: list[Law]):
     pynusmv.init.init_nusmv()
-
     try:
-        pynusmv.glob.load_from_file(filepath=filepath)
+        pynusmv.glob.load_from_string(filecontent)
         pynusmv.glob.compute_model()
         fsm = pynusmv.glob.prop_database().master.bddFsm
-
 
 
         for l in laws:
