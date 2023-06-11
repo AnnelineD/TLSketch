@@ -48,7 +48,7 @@ def typed_permutations(types: tuple[TSort], object_per_type: dict[TSort, list[TC
 def sort_constants(language: tarski.fol.FirstOrderLanguage) -> dict[TSort, list[TConstant]]:
     d = dict()
     for s in language.sorts:
-        d[s] = [c for c in language.constants() if c.sort == s]
+        d[s] = [c for c in language.constants() if (c.sort == s) or (s in language.ancestor_sorts[c.sort])]
     return d
 
 
