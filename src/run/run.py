@@ -156,7 +156,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
                 starttime = time.monotonic_ns()
                 try:
-                    verified = aresult.get(60)
+                    verified = aresult.get(300)
                     endtime = time.monotonic_ns()
                 except TimeoutError:
                     endtime = time.monotonic_ns()
@@ -186,13 +186,13 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
 
 if __name__ == '__main__':
-    domain_name = "gripper"
+    domain_name = "reward"
     directory = f"../../domains/{domain_name}/"
     domain_file = directory + "domain.pddl"
 
     files = os.listdir(directory)
     files = sort_files(files)
-    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    instance_files = list(filter(lambda x: x.startswith('instance'), files))
     # instance_files.remove("domain.pddl")
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
-    max_rules = 2
+    max_rules = 1
 
     filename = f"all_instances_{'_'.join(map(str, generator_params))}_{str(max_rules)}_{str(max_features)}.json"
 
@@ -215,5 +215,5 @@ if __name__ == '__main__':
         file_dir = f"../../generated/{domain_name}/"
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
-        run_on_multiple_instances(directory, domain_file, instance_files[:4], generator_params, max_features, max_rules)
+        run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
     write_all()

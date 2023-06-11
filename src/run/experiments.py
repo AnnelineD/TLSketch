@@ -46,6 +46,26 @@ def all_blocks_on():
     run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10], generator_params, max_features, max_rules)
 
 
+def delivery_1_1():
+    domain_name = "delivery"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('instance'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 1
+    max_rules = 1
+
+    file_dir = f"../../generated/{domain_name}/"
+    if not os.path.isdir(file_dir):
+        os.mkdir(file_dir)
+    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+
+
 def all_gripper():
     domain_name = "gripper"
     directory = f"../../domains/{domain_name}/"
@@ -109,6 +129,9 @@ def remove_duplicate_domains(path):
 
 
 if __name__ == '__main__':
+    #remove_duplicate_domains("../../domains/delivery")
+
     #all_blocks_on()
     #all_gripper()
-    blocks_on_1_1()
+    #blocks_on_1_1()
+    delivery_1_1()
