@@ -10,6 +10,7 @@ def blocks_on_1_1():
 
     files = os.listdir(directory)
     files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
     files_3 = list(filter(lambda x: x.startswith('p-3'), files))
     files_4 = list(filter(lambda x: x.startswith('p-4'), files))
     files_5 = list(filter(lambda x: x.startswith('p-5'), files))
@@ -19,7 +20,7 @@ def blocks_on_1_1():
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10] + files_5[:10], generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
 
 
 def blocks_clear_1_1():
@@ -29,7 +30,7 @@ def blocks_clear_1_1():
 
     files = os.listdir(directory)
     files = run.sort_files(files)
-    # instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
     files_3 = list(filter(lambda x: x.startswith('p-3'), files))
     files_4 = list(filter(lambda x: x.startswith('p-4'), files))
     files_5 = list(filter(lambda x: x.startswith('p-5'), files))
@@ -39,7 +40,7 @@ def blocks_clear_1_1():
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10] + files_5[:10], generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
 
 
 def gripper_1_1():
@@ -209,12 +210,12 @@ def remove_duplicate_domains(path):
 if __name__ == '__main__':
     # Run with graph cashing
     # blocks_clear_1_1()
-    # blocks_on_1_1()
+    blocks_on_1_1()
 
     # Run without graph cashing
-    gripper_1_1()
-    # delivery_1_1()
+    # gripper_1_1()
+    # delivery_1_1()        # wacht nog even met deze
     # miconic_1_1()
-    # reward_1_1()      # wacht nog even met deze
+    # reward_1_1()
     # spanner_1_1()
     # visitall_1_1()

@@ -1,3 +1,5 @@
+import time
+
 import tarski.search.operations
 from dataclasses import dataclass
 from tarski.io import PDDLReader
@@ -53,9 +55,9 @@ def calc_goal_states_from_str(states: list[StateStr], goal) -> list[int]:
     return gs
 
 
-#@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
-#@timer("../../cache/", fm.names.graph_timer)
-def construct_graph(problem: TProblem) -> GraphSystem:
+@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
+@timer("../../cache/", fm.names.graph_timer)
+def construct_graph(problem: TProblem, time_limit_seconds=None) -> GraphSystem:
     d = sort_constants(problem.language)
     acts: list[TAction] = get_ground_actions(list(problem.actions.values()), d)
 
