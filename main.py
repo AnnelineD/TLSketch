@@ -160,16 +160,41 @@ def check_delivery():
     instance = FeatureInstance(system.graph, system.init, system.goals, vals)
     print(verify_sketch(sketch, instance, [sketch_verification.laws.law1]))
 
+
+def check_spanner():
+    """
+    (:policy
+    (:boolean_features )
+    (:numerical_features "n_count(c_and(c_not(c_primitive(tightened,0)),c_primitive(at,0)))")
+    (:rule (:conditions ) (:effects (:e_n_dec 0)))
+    )
+    """
+    with open("cache/spanner/transition_systems/p-3-3-4-0.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[], ["EDecr(feature='n_count(c_and(c_not(c_primitive(tightened,0)),c_projection(r_primitive(at,0,1),0)))')"]]])
+    with open("cache/spanner/features/6_6_6_6_6_180_10000/p-3-3-4-0.json") as f:
+        vals = json.load(f)
+
+    print(system.graph.show())
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law2]))
+
+
 def print_graphs():
-    with open("cache/blocksworld/graphs/b1_b2_b3_b4.json") as f:
+    with open("cache/spanner/transition_systems/p-3-3-3-0.json") as f:
         ts = json.load(f)
     system = GraphSystem.deserialize(ts)
     print(system.graph.show())
     print()
+    """
     with open("cache/blocksworld/graphs_pre_opt/b1_b2_b3_b4.json") as f:
         ts = json.load(f)
     system = GraphSystem.deserialize(ts)
     print(system.graph.show())
+    """
 
 
 

@@ -5,15 +5,16 @@ from examples import *
 
 
 class TarskiSystemTest(unittest.TestCase):
-    path = "domains/"
+    path = "../../domains/"
 
     reader = PDDLReader(raise_on_error=True)
     reader.parse_domain(path + 'blocks_4_clear/domain.pddl')
     problem = reader.parse_instance(path + 'blocks_4_clear/p-3-0.pddl')
 
     def test_something(self):
-
-        st, g = construct_graph(self.problem)
+        graph_sys = construct_graph(self.problem)
+        st = graph_sys.states
+        g = graph_sys.graph
         self.assertEqual(len(st), 22)
         self.assertEqual(len(st), g.size())
         for i, (n, nbs) in enumerate(g.adj):

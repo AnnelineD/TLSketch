@@ -76,8 +76,10 @@ def construct_graph(problem: TProblem) -> GraphSystem:
             idx_s = graph.grow()
             states.append(s_str)
 
+        has_nbr = False
         for a in acts:
             if tarski.search.operations.is_applicable(s, a):
+                has_nbr = True
                 ns = tarski.search.operations.progress(s, a)
                 ns_str = tmodel_to_state(ns)
                 if ns_str in states:
@@ -88,6 +90,8 @@ def construct_graph(problem: TProblem) -> GraphSystem:
                 graph.add(idx_s, idx_ns, a.name)
                 if ns_str not in checked:
                     todo.append(ns)
+        if not has_nbr:
+            graph.add(idx_s, idx_s, "end")
 
     return GraphSystem([s for s in states], graph)
 
