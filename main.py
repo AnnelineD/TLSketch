@@ -21,12 +21,13 @@ from src.sketch_verification.laws import law_test, exists, if_followed_next_law,
 from src.sketch_verification.verify import check_file
 from src.to_smv.conversion import *
 from src.to_smv.make_smv import to_smv_format
+from src import sketch_verification
 #from src.logics.sketch_to_ltl import policy_to_arrowsketch, fill_in_rule, fill_in_rules, list_to_ruletups, \
 #    ruletups_to_arrowsketch
 
 import src.file_manager as fm
 from src.dlplan_utils import parse_features
-from src.transition_system.transition_system import TransitionSystem
+from src.transition_system.transition_system import TransitionSystem, GraphSystem
 
 
 def show_domain_info():
@@ -88,7 +89,8 @@ def test_made_sketch_gripper():
     sketch = Sketch([SketchRule([CNAny(feature='n_count(c_equal(r_primitive(at,0,1),r_primitive(at_g,0,1)))')],
                                 [EIncr(feature='n_count(c_equal(r_primitive(at,0,1),r_primitive(at_g,0,1)))')])])
 
-    with open("cache/gripper-strips/transition_systems/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
+    with open(
+            "cache/gripper-strips/transition_systems_pre_opt/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
         transition_sys = TransitionSystem.deserialize(json.load(f))
     with open("cache/gripper-strips/features/5_5_10_10_10_180_100000_1/rooma_roomb_left_right_ball1_ball2_ball3_[at_g(ball1,roomb),at_g(ball2,roomb),at_g(ball3,roomb)].json", "r") as f:
         feature_vals = json.load(f)
@@ -104,13 +106,15 @@ def test_Drexler_sketch_gripper():
                      SketchRule([],
                                 [EIncr(feature='n_count(c_primitive(at,0))'), ENEqual('n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))')])])
 
-    with open("cache/gripper-strips/transition_systems/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
+    with open(
+            "cache/gripper-strips/transition_systems_pre_opt/rooma_roomb_left_right_ball1_ball2_ball3_(at(ball1,roomb)andat(ball2,roomb)andat(ball3,roomb)).json", "r") as f:
         transition_sys = TransitionSystem.deserialize(json.load(f))
     with open("cache/gripper-strips/features/5_5_10_10_10_180_100000_1/rooma_roomb_left_right_ball1_ball2_ball3_[at_g(ball1,roomb),at_g(ball2,roomb),at_g(ball3,roomb)].json", "r") as f:
         feature_vals = json.load(f)
     #print(transition_sys.graph.show())
     inst = FeatureInstance(transition_sys.graph, transition_sys.init, transition_sys.goals, feature_vals)
     return verify_sketch(sketch, inst, [law1, law2, simple_law])
+
 
 def filter_rules():
     with open("generated/gripper/two_instances_simple_laws_5_5_10_10_10_180_100000_1_2_1.json") as f:
@@ -125,15 +129,86 @@ def filter_rules():
         print('\n')
 
 
-if __name__ == '__main__':
-    #print(test_sketch())
-    #law = law_test.expand(7)
-    #ex = exists.expand(7)
-    #if_followed = if_followed_next_law.expand(7)
-    #simple = simple_law.expand(7)
-    #print(check_file("gripper3.smv", [simple]))
+def compare_sketch_files():
+    with open("generated/blocks_4_clear/2_instances_graph_reduce5_5_5_5_5_180_10000_2_1.json") as f:
+        reduced = [Sketch.deserialize(rs) for rs in json.load(f)]
 
-    test_Drexler_sketch_gripper()
+    with open("generated/blocks_4_clear/2_instances_graph_5_5_5_5_5_180_10000_2_1.json") as f:
+        sketches_1: list[Sketch] = [Sketch.deserialize(rs) for rs in json.load(f)]
+
+
+def check_delivery():
+    """
+    (:policy
+     (:boolean_features)
+        (: numerical_features
+    "n_count(c_some(r_primitive(at,0,1),c_primitive(at_g,1)))")
+    (:rule (:conditions)(: effects(:e_n_inc
+    0)))
+    )
+    """
+    with open("cache/delivery/transition_systems/instance_2_1_1.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[],["EIncr(feature='n_count(c_some(r_primitive(at,0,1),c_primitive(at_g,1)))')"]]])
+    with open("cache/delivery/features/5_5_5_5_5_180_10000/instance_2_1_1.json") as f:
+        vals = json.load(f)
+
+    print(system.graph.show())
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law1]))
+
+def print_graphs():
+    with open("cache/blocksworld/graphs/b1_b2_b3_b4.json") as f:
+        ts = json.load(f)
+    system = GraphSystem.deserialize(ts)
+    print(system.graph.show())
+    print()
+    with open("cache/blocksworld/graphs_pre_opt/b1_b2_b3_b4.json") as f:
+        ts = json.load(f)
+    system = GraphSystem.deserialize(ts)
+    print(system.graph.show())
+
+
+
+if __name__ == '__main__':
+    """
+    sketch = Sketch.deserialize([[["CNAny(feature='n_count(c_primitive(clear,0))')"],["EIncr(feature='n_count(c_primitive(clear,0))')"]]])
+    sketch_2 = Sketch.deserialize([[["CNAny(feature='n_count(c_and(c_all(r_primitive(on,0,1),c_primitive(on-table,0)),c_primitive(clear_g,0)))')"],
+                                    ["EDecr(feature='n_count(c_and(c_all(r_primitive(on,0,1),c_primitive(on-table,0)),c_primitive(clear_g,0)))')"]]])
+    sketch_2a = Sketch(rules=[SketchRule(conditions=[CNAny(feature='n_count(c_some(r_primitive(on,0,1),c_primitive(on-table,0)))')], effects=[EIncr(feature='n_count(c_some(r_primitive(on,0,1),c_primitive(on-table,0)))')])])
+
+    sketch_child = Sketch.deserialize([[["CNAny(feature='n_count(c_all(r_inverse(r_primitive(waiting,0,1)),c_primitive(served,0)))')"], ["EIncr(feature='n_count(c_all(r_inverse(r_primitive(waiting,0,1)),c_primitive(served,0)))')"]]])
+
+    sketch_3 = Sketch.deserialize([[
+      [
+        "CGreater(feature='n_count(r_primitive(on,0,1))')"
+      ],
+      [
+        "EDecr(feature='n_count(r_primitive(on,0,1))')"
+      ]
+    ]])
+    with open("cache/blocksworld/transition_systems_pre_opt/p-3-0.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    with open("cache/blocksworld/features/5_5_10_10_10_180_100000_1/p-3-0.json") as f:
+        vals = json.load(f)
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch_2a, instance, [sketch_verification.laws.law1]))
+    """
+    print_graphs()
+    """
+    law = law_test.expand(7)
+    ex = exists.expand(7)
+    if_followed = if_followed_next_law.expand(7)
+    simple = simple_law.expand(7)
+    print(check_file("gripper3.smv", [simple]))
+    """
+    #test_Drexler_sketch_gripper()
 
     """
     sketches = list(model_check_from_files("gripper_test"))

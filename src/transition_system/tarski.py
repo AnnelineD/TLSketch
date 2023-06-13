@@ -55,39 +55,41 @@ def calc_goal_states_from_str(states: list[StateStr], goal) -> list[int]:
     return gs
 
 
-@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
-@timer("../../cache/", fm.names.graph_timer)
-def construct_graph(problem: TProblem, time_limit_seconds=None) -> GraphSystem:
+#@fm.cashing.cache_to_file("../../cache/", lambda x: x.serialize(), GraphSystem.deserialize, fm.names.graph)
+#@timer("../../cache/", fm.names.graph_timer)
+def construct_graph(problem: TProblem) -> GraphSystem:
     d = sort_constants(problem.language)
     acts: list[TAction] = get_ground_actions(list(problem.actions.values()), d)
 
     todo: list[TModel] = [problem.init]
-    checked: list[TModel] = list()
+    checked: list[StateStr] = list()
     graph: DirectedGraph = DirectedGraph()
-    states: list[TModel] = list()
+    states: list[StateStr] = list()
 
     while todo:
         s = todo.pop()
-        checked.append(s)
-        if s in states:
-            idx_s = states.index(s)
+        s_str = tmodel_to_state(s)
+        checked.append(s_str)
+        if s_str in states:
+            idx_s = states.index(s_str)
         else:
             idx_s = graph.grow()
-            states.append(s)
+            states.append(s_str)
 
         for a in acts:
             if tarski.search.operations.is_applicable(s, a):
                 ns = tarski.search.operations.progress(s, a)
-                if ns in states:
-                    idx_ns = states.index(ns)
+                ns_str = tmodel_to_state(ns)
+                if ns_str in states:
+                    idx_ns = states.index(ns_str)
                 else:
                     idx_ns = graph.grow()
-                    states.append(ns)
+                    states.append(ns_str)
                 graph.add(idx_s, idx_ns, a.name)
-                if ns not in checked:
+                if ns_str not in checked:
                     todo.append(ns)
 
-    return GraphSystem([tmodel_to_state(s) for s in states], graph)
+    return GraphSystem([s for s in states], graph)
 
 
 def tmodel_to_state(tmodel: TModel) -> StateStr:
