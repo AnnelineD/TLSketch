@@ -68,13 +68,16 @@ def reward_1_1():
     files = os.listdir(directory)
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('instance'), files))
+    instance_files_2 = list(filter(lambda x: x.startswith('instance_2x2'), files))
+    instance_files_3 = list(filter(lambda x: x.startswith('instance_3x3'), files))
+
 
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files_2 + instance_files_3, generator_params, max_features, max_rules)
 
 
 def delivery_1_1():
@@ -85,13 +88,14 @@ def delivery_1_1():
     files = os.listdir(directory)
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('instance'), files))
+    drexler_instances = list(filter(lambda x: x.startswith('instance_2'), files))
 
     complexity = 5
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, drexler_instances, generator_params, max_features, max_rules)
 
 
 def miconic_1_1():
@@ -101,14 +105,16 @@ def miconic_1_1():
 
     files = os.listdir(directory)
     files = run.sort_files(files)
-    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    instance_files_2 = list(filter(lambda x: x.startswith('p-2'), files))
+    instance_files_3 = list(filter(lambda x: x.startswith('p-3'), files))
+    instance_files_4 = list(filter(lambda x: x.startswith('p-4'), files))
 
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files_2 + instance_files_3 + instance_files_4, generator_params, max_features, max_rules)
 
 
 def spanner_1_1():
@@ -120,12 +126,12 @@ def spanner_1_1():
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
 
-    complexity = 5
+    complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, instance_files[:30], generator_params, max_features, max_rules)
 
 
 def visitall_1_1():
@@ -135,18 +141,20 @@ def visitall_1_1():
 
     files = os.listdir(directory)
     files = run.sort_files(files)
+    used_by_drexler = [f"p-{unavail}-{pct}-{grid_size}-{seed}.pddl" for unavail in range(1,3) for pct in [0.5,1.0] for grid_size in range(2,4) for seed in range(0,50)]
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    used_files = list(filter(lambda x: x in used_by_drexler, files))
 
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules)
 
 
-def all_gripper():
-    domain_name = "gripper"
+def childsnack_1_1():
+    domain_name = "childsnack"
     directory = f"../../domains/{domain_name}/"
     domain_file = directory + "domain.pddl"
 
@@ -154,15 +162,13 @@ def all_gripper():
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
 
-    complexity = 4
+    complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
-    max_features = 2
-    max_rules = 2
+    max_features = 1
+    max_rules = 1
 
-    file_dir = f"../../generated/{domain_name}/"
-    if not os.path.isdir(file_dir):
-        os.mkdir(file_dir)
     run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+
 
 
 """https://www.geeksforgeeks.org/finding-duplicate-files-with-python/"""
@@ -210,12 +216,13 @@ def remove_duplicate_domains(path):
 if __name__ == '__main__':
     # Run with graph cashing
     # blocks_clear_1_1()
-    blocks_on_1_1()
+    # blocks_on_1_1()
 
     # Run without graph cashing
     # gripper_1_1()
-    # delivery_1_1()        # wacht nog even met deze
-    # miconic_1_1()
-    # reward_1_1()
-    # spanner_1_1()
-    # visitall_1_1()
+    delivery_1_1()      # TODO
+    # miconic_1_1()     # TODO
+    # reward_1_1()      # TODO (was al gerund maar zij hebben het op minder instances gedaan, dus ffie opnieuw voor consistency
+    # spanner_1_1()     # TODO
+    # visitall_1_1()    # TODO
+    # childsnack_1_1()  # TODO
