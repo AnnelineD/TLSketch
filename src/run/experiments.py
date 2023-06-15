@@ -71,8 +71,7 @@ def reward_1_1():
     instance_files_2 = list(filter(lambda x: x.startswith('instance_2x2'), files))
     instance_files_3 = list(filter(lambda x: x.startswith('instance_3x3'), files))
 
-
-    complexity = 4
+    complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
@@ -109,7 +108,7 @@ def miconic_1_1():
     instance_files_3 = list(filter(lambda x: x.startswith('p-3'), files))
     instance_files_4 = list(filter(lambda x: x.startswith('p-4'), files))
 
-    complexity = 4
+    complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
@@ -145,7 +144,7 @@ def visitall_1_1():
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
     used_files = list(filter(lambda x: x in used_by_drexler, files))
 
-    complexity = 4
+    complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
