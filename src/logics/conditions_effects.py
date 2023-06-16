@@ -21,10 +21,10 @@ class Condition:
             case CGreater(nf): return CZero(nf)
             case CZero(nf): return CGreater(nf)
 
-    def show(self, feature_repr: dict[Feature, str] = None):
-        r = self.feature.name if not feature_repr else feature_repr[self.feature]
+    def show(self, feature_repr: dict[Feature, str] = None) -> str:
+        r = self.feature if not feature_repr else feature_repr[self.feature]
         match self:
-            case CPositive(bf):f"b{r}"
+            case CPositive(bf): return f"b{r}"
             case CNegative(bf): return f"¬b{r}"
             case CZero(nf): return f"n{r}=0"
             case CGreater(nf): return f"n{r}>0"
