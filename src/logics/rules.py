@@ -115,12 +115,16 @@ class SketchRule(Rule):
     def get_features(self) -> set[Feature]:
         return self.get_condition_features().union(self.get_effect_features())
 
+    def simplify(self):
+        return SketchRule([c for c in self.conditions if not isinstance(c, CNAny) or isinstance(c, CBAny)],
+                          [e for e in self.effects if not isinstance(e, ENAny) or isinstance(e, EBAny)])
+
     def to_ltl(self, bounds: dict[str, (int, int)]) -> list['LTLRule']:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
         # TODO what to do with rules without effects -> can't exist
         assert(len(self.effects) > 0)
         assert(all([l <= u for (l, u) in bounds.values()]))
-        features: set[Feature] = self.get_condition_features()   # Get only the features that are present in conditions or effects
+        features: set[Feature] = set()  # Get only the features that are present in conditions or effects
         # We do not need features that are not mentioned in conditions and are unchanged in the effects
         for ef in self.effects:
             match ef:
@@ -131,13 +135,14 @@ class SketchRule(Rule):
         condition_vars: set[Condition] = set(self.conditions)
 
         for v in condition_vars:
-            match v:
-                case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(max(bounds[f][0], 1), bounds[f][1] + 1)]
-                case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
-                case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
-                case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
-                case CNAny(f): pass
-                case CBAny(f): pass
+            if v.feature in features:
+                match v:
+                    case CGreater(f): options[v.feature] = [NumericalVar(f, i) for i in range(max(bounds[f][0], 1), bounds[f][1] + 1)]
+                    case CZero(f): options[v.feature] = [NumericalVar(f, 0)]
+                    case CPositive(f): options[v.feature] = [BooleanVar(f, True)]
+                    case CNegative(f): options[v.feature] = [BooleanVar(f, False)]
+                    case CNAny(f): pass
+                    case CBAny(f): pass
 
         # If a feature is not mentioned in the conditions, but it is in the effect we should also know its value
         for f in options:
@@ -197,10 +202,9 @@ class SketchRule(Rule):
 
     def expand(self, bounds: dict[str, (int, int)]) -> list[ExpandedRule]:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
-        # TODO what to do with rules without effects -> can't exist
         assert(len(self.effects) > 0)
         assert(all([l <= u for (l, u) in bounds.values()]))
-        features: set[Feature] = self.get_condition_features()   # Get only the features that are present in conditions or effects
+        features: set[Feature] = set()  # Get only the features that are present in conditions or effects
         # We do not need features that are not mentioned in conditions and are unchanged in the effects
         for ef in self.effects:
             match ef:
@@ -211,13 +215,14 @@ class SketchRule(Rule):
         condition_vars: set[Condition] = set(self.conditions)
 
         for v in condition_vars:
-            match v:
-                case CGreater(f): options[v.feature] = [NumericalVar(f, i, "=") for i in range(max(bounds[f][0], 1), bounds[f][1] + 1)]
-                case CZero(f): options[v.feature] = [NumericalVar(f, 0, "=")]
-                case CPositive(f): options[v.feature] = [BooleanVar(f, True, "=")]
-                case CNegative(f): options[v.feature] = [BooleanVar(f, False, "=")]
-                case CNAny(f): pass
-                case CBAny(f): pass
+            if v.feature in features:
+                match v:
+                    case CGreater(f): options[v.feature] = [NumericalVar(f, i, "=") for i in range(max(bounds[f][0], 1), bounds[f][1] + 1)]
+                    case CZero(f): options[v.feature] = [NumericalVar(f, 0, "=")]
+                    case CPositive(f): options[v.feature] = [BooleanVar(f, True, "=")]
+                    case CNegative(f): options[v.feature] = [BooleanVar(f, False, "=")]
+                    case CNAny(f): pass
+                    case CBAny(f): pass
 
         # If a feature is not mentioned in the conditions, but it is in the effect we should also know its value
         for f in options:
@@ -233,9 +238,18 @@ class SketchRule(Rule):
         # print("effects", effect_vars)
         new_rules = list[ExpandedRule]()
 
+        def to_feature_var(c: Condition) -> FeatureVar:
+            match c:
+                case CGreater(f): return NumericalVar(f, 0, ">")
+                case CZero(f): return NumericalVar(f, 0, "=")
+                case CPositive(f): return BooleanVar(f, True, "=")
+                case CNegative(f): return BooleanVar(f, False, "=")
+                case CNAny(f): pass
+                case CBAny(f): pass
+
         for c_dict in condition_combinations:
             new_effect = []
-            new_condition = list(c_dict.values())
+            new_condition = list([to_feature_var(c) for c in self.conditions if c.feature not in features and to_feature_var(c) is not None]) + list(c_dict.values())
 
             for e in self.effects:
                 match e:
@@ -282,6 +296,9 @@ class Sketch:
 
     def contains_sketch(self, other):
         return all(r in self.rules for r in other.rules)
+
+    def get_features(self) -> set[Feature]:
+        return {f for r in self.rules for f in r.get_features()}
 
 
 

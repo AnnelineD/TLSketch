@@ -132,9 +132,9 @@ class ToLTLTest(unittest.TestCase):
         exp_sketch_2 = sketch_2.expand(bound_dict)
 
         wanted_exp_sketch_2 = ExpandedSketch([
-            ExpandedRule([NumericalVar('n_o', 1, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 1, "<")]),
-            ExpandedRule([NumericalVar('n_o', 2, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 2, "<")]),
-            ExpandedRule([NumericalVar('n_o', 3, "="), NumericalVar('n_n', 0, "=")], [NumericalVar('n_o', 3, "<")]),
+            ExpandedRule([NumericalVar('n_n', 0, "="), NumericalVar('n_o', 1, "=")], [NumericalVar('n_o', 1, "<")]),
+            ExpandedRule([NumericalVar('n_n', 0, "="), NumericalVar('n_o', 2, "=")], [NumericalVar('n_o', 2, "<")]),
+            ExpandedRule([NumericalVar('n_n', 0, "="), NumericalVar('n_o', 3, "=")], [NumericalVar('n_o', 3, "<")]),
         ])
 
         # for e, r in enumerate(ltl_sketch_2.rules):
@@ -144,6 +144,37 @@ class ToLTLTest(unittest.TestCase):
             self.assertEqual(r1.conditions, r2.conditions)
             self.assertEqual(r1.effects, r2.effects)
 
+        sketch_3 = Sketch([SketchRule([CGreater('n_n')], [EPositive('b_a')])])
+        wanted_3 = ExpandedSketch([ExpandedRule([NumericalVar(data='n_n', value=0, operator='>')], [BooleanVar(data='b_a', value=True, operator='=')])])
+        for r1, r2 in zip(sketch_3.expand(bound_dict).rules, wanted_3.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
+
+        sketch_4 = Sketch([SketchRule([CNegative('b_a')], [EBEqual('b_a')])])
+        wanted_4 = ExpandedSketch([ExpandedRule([BooleanVar(data='b_a', value=False, operator='=')], [BooleanVar(data='b_a', value=False, operator='=')])])
+
+        for r1, r2 in zip(sketch_4.expand(bound_dict).rules, wanted_4.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
+
+        sketch_no_cond = Sketch([SketchRule([], [EPositive('b_a')])])
+        wanted_no_cond = ExpandedSketch([ExpandedRule([],
+                                                [BooleanVar(data='b_a', value=True, operator='=')])])
+
+        for r1, r2 in zip(sketch_no_cond.expand(bound_dict).rules, wanted_no_cond.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
+
+        sketch_any_cond = Sketch([SketchRule([CNAny('n_n')], [EPositive('b_a')])])
+        wanted_any_cond = ExpandedSketch([ExpandedRule([],
+                                                      [BooleanVar(data='b_a', value=True, operator='=')])])
+
+        for r in sketch_no_cond.expand(bound_dict).rules:
+            print(r.conditions, r.effects)
+
+        for r1, r2 in zip(sketch_any_cond.expand(bound_dict).rules, wanted_any_cond.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
 
 
 
