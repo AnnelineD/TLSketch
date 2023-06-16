@@ -193,7 +193,6 @@ def visitall_1_1():
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
-    print(len(used_files))
 
     run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules)
 
@@ -268,14 +267,11 @@ def remove_duplicate_domains(path):
 if __name__ == '__main__':
     # blocks_clear_1_1()
     # blocks_on_1_1()
-
-    # Run without graph cashing
     # gripper_1_1()
-    # delivery_1_1()      # TODO
-    # miconic_1_1()     # TODO
-    # reward_1_1()      # TODO (was al gerund maar zij hebben het op minder instances gedaan, dus ffie opnieuw voor consistency
-    # spanner_1_1()     # TODO
-    visitall_1_1()    # TODO
+    # delivery_1_1()
+    miconic_1_1()     # TODO
+    # reward_1_1()
+    # spanner_1_1()
+    # visitall_1_1()    # TODO
     # childsnack_1_1()  # TODO
 
-    # blocks_on_2_2()
