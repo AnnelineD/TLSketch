@@ -31,7 +31,7 @@ def sort_files(fs: list[str]):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(fs, key=alphanum_key)
 
-
+"""
 def run():
     domain = ts.tarski.load_domain("../../domains/miconic/domain.pddl")
 
@@ -69,7 +69,7 @@ def run():
         print(checked)
         if checked:
             print(the_one_sketch)
-
+"""
 
 def cache_all_transition_systems(domain_file: str, instance_files: list[str]):
     print("Building transition systems and reading states")
@@ -80,7 +80,7 @@ def cache_all_transition_systems(domain_file: str, instance_files: list[str]):
     print("Done with transition systems")
 
 
-def run_on_multiple_instances(directory: str, domain_file: str, instance_files: list[str], generator_params: list[int], max_features, max_rules):
+def run_on_multiple_instances(directory: str, domain_file: str, instance_files: list[str], generator_params: list[int], max_features, max_rules, time_limit=None):
     assert(len(generator_params) == 7)
     domain = ts.tarski.load_domain(domain_file)
     dl_vocab = ts.conversions.dlvocab_from_tarski(domain.language)
@@ -106,7 +106,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                                     lambda x: x, names.feature_file)(timer(f"../../cache/{domain_name}/timers/features/", names.feature_file)(generator.generate))
     params = generator_params
     string_features: list[str] = list(filter(lambda x: x.startswith("n_") or x.startswith("b_"), cached_generate(factory, [s for states in all_states for s in states], *params)))      # TODO check these parameters
-    filtered_features = [f for f in string_features if f not in ["c_bot", "c_top", "b_empty(c_top)",
+    filtered_features = [f for f in string_features if f not in ["b_empty(c_top)",
                                                                  "b_empty(c_bot)",
                                                                  "n_count(c_top)",
                                                                  "n_count(c_bot)"]]
@@ -131,9 +131,9 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                    deserializer=lambda d: ([Sketch.deserialize(r) for r in d["working"]],
                                            [(Sketch.deserialize(r), n, i) for r, n, i in d['timed_out']],
                                            d["number_tested"], d["stable"], d["instance_files"], d["timings"]),
-                   namer=lambda n, _: f'rules_{n}.json')
-    @timer(f"../../generated/{domain_name}/timers/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, _: f'rules_{n}.json')
-    def with_n_rules(n, past_sketches):
+                   namer=lambda n, *_: f'rules_{n}.json')
+    @timer(f"../../generated/{domain_name}/timers/{'_'.join(map(str, generator_params))}_{max_features}/", lambda n, *_: f'rules_{n}.json')
+    def with_n_rules(n, past_sketches, time_limit_s=None):
         changes = set()
         timed_out_sketches = list[(Sketch, int, str)]()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
@@ -142,6 +142,8 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         working_sketches = []
         sketch_number = 0
         timings = []
+
+        start_time = time.monotonic_ns()
         for sketch in tqdm(filtered_candidate_sketches):
             sketch_number += 1
             verified = True
@@ -157,14 +159,14 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
                 starttime = time.monotonic_ns()
                 try:
                     verified = aresult.get(300)
+                    # verified = verify_sketch(sketch, feature_instance, [law1, law2, impl_law])
                     endtime = time.monotonic_ns()
                 except TimeoutError:
+                    print("time out!", sketch_number, i)
                     endtime = time.monotonic_ns()
                     timed_out_sketches.append((sketch, e, i))
-                    print("time out!", sketch_number, i)
                     timings_sketch.append((endtime - starttime, -1))
                     break
-                    # logica voor niet op tijd
 
                 if not verified:
                     changes.add((e, i))
@@ -174,25 +176,27 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
             if verified:
                 working_sketches.append(sketch)
             timings.append(timings_sketch)
+            if time_limit_s and (time.monotonic_ns() - start_time) >= time_limit_s*1_000_000_000:
+                break
         return working_sketches, timed_out_sketches, sketch_number, list(changes), instance_files, timings
 
     with Pool(processes=1) as p:
         past_sketches = []
         for n_rules in range(1, max_rules + 1):
-            working_sketches, *_ = with_n_rules(n_rules, past_sketches)
+            working_sketches, *_ = with_n_rules(n_rules, past_sketches, time_limit)
             past_sketches.extend(working_sketches)
 
     print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 
 
 if __name__ == '__main__':
-    domain_name = "reward"
+    domain_name = "blocks_4_on"
     directory = f"../../domains/{domain_name}/"
     domain_file = directory + "domain.pddl"
 
     files = os.listdir(directory)
     files = sort_files(files)
-    instance_files = list(filter(lambda x: x.startswith('instance'), files))
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
     # instance_files.remove("domain.pddl")
     # instance_files.remove("domain-with-fix.pddl")
     # instance_files.remove("README")
