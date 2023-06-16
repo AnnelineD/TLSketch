@@ -1,3 +1,4 @@
+import json
 import os
 
 import run
@@ -21,6 +22,28 @@ def blocks_on_1_1():
     max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+
+
+def blocks_on_2_2():
+    domain_name = "blocks_4_on"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    files_3 = list(filter(lambda x: x.startswith('p-3'), files))
+    files_4 = list(filter(lambda x: x.startswith('p-4'), files))
+    files_5 = list(filter(lambda x: x.startswith('p-5'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 1
+
+    time_limit_h = 24
+
+    run.run_on_multiple_instances(directory, domain_file, files_3[:2] + files_4[:2], generator_params, max_features, max_rules, 7*60)
 
 
 def blocks_clear_1_1():
@@ -104,9 +127,11 @@ def miconic_1_1():
 
     files = os.listdir(directory)
     files = run.sort_files(files)
-    instance_files_2 = list(filter(lambda x: x.startswith('p-2'), files))
-    instance_files_3 = list(filter(lambda x: x.startswith('p-3'), files))
-    instance_files_4 = list(filter(lambda x: x.startswith('p-4'), files))
+    instance_files_2 = list(filter(lambda x: x.startswith('p-2-'), files))
+    instance_files_3 = list(filter(lambda x: x.startswith('p-3-'), files))
+    instance_files_4 = list(filter(lambda x: x.startswith('p-4-'), files))
+
+    print(instance_files_2 + instance_files_3 + instance_files_4)
 
     complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
@@ -141,13 +166,34 @@ def visitall_1_1():
     files = os.listdir(directory)
     files = run.sort_files(files)
     used_by_drexler = [f"p-{unavail}-{pct}-{grid_size}-{seed}.pddl" for unavail in range(1,3) for pct in [0.5,1.0] for grid_size in range(2,4) for seed in range(0,50)]
-    instance_files = list(filter(lambda x: x.startswith('p-'), files))
-    used_files = list(filter(lambda x: x in used_by_drexler, files))
+    ill_defined = ["p-2-0.5-2-29.pddl",
+                   "p-2-0.5-3-6.pddl",
+                   "p-2-0.5-3-14.pddl",
+                   "p-2-0.5-3-39.pddl",
+                   "p-2-0.5-3-41.pddl",
+                   "p-2-0.5-3-46.pddl",
+                   "p-2-1.0-3-6.pddl",
+                   "p-2-1.0-3-14.pddl",
+                   "p-2-1.0-3-19.pddl",
+                   "p-2-1.0-3-39.pddl",
+                   "p-2-1.0-3-46.pddl",
+                   ]
 
+
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    used_files = list(filter(lambda x: x in used_by_drexler and x not in ill_defined, files))
+    """
+    for file in used_files:
+        with open(f'../../cache/grid-visit-all/transition_systems/' + file.removesuffix('.pddl') + ".json", 'r') as f:
+            data = json.load(f)
+        if not data["goals"]:
+            print(file)
+    """
     complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
+    print(len(used_files))
 
     run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules)
 
@@ -160,13 +206,20 @@ def childsnack_1_1():
     files = os.listdir(directory)
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    # filter all instances with < 10000 states as in Drexler
+    small_state_space = [f"p-2-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
+                       trays in range(1, 3) for seed in range(0, 5)] + \
+                      [f"p-3-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
+                       trays in range(1, 2) for seed in range(0, 5)]
+    used_files = list(filter(lambda x: x in small_state_space, files))
+    print(used_files)
 
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+    run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules)
 
 
 
@@ -213,15 +266,16 @@ def remove_duplicate_domains(path):
 
 
 if __name__ == '__main__':
-    # Run with graph cashing
     # blocks_clear_1_1()
     # blocks_on_1_1()
 
     # Run without graph cashing
     # gripper_1_1()
-    delivery_1_1()      # TODO
+    # delivery_1_1()      # TODO
     # miconic_1_1()     # TODO
     # reward_1_1()      # TODO (was al gerund maar zij hebben het op minder instances gedaan, dus ffie opnieuw voor consistency
     # spanner_1_1()     # TODO
-    # visitall_1_1()    # TODO
+    visitall_1_1()    # TODO
     # childsnack_1_1()  # TODO
+
+    # blocks_on_2_2()
