@@ -45,7 +45,7 @@ def rules_to_smv(rules: list[LTLRule]) -> str:
 
 
 def rules_to_smv(exp_sketch: ExpandedSketch) -> str:
-    return '\n'.join([f"\tc{i} := {' & '.join(repr_feature_vars(c) for c in r.conditions)}; \n "
+    return '\n'.join([f"\tc{i} := {' & '.join(repr_feature_vars(c) for c in r.conditions) if r.conditions else 'TRUE'}; \n "
                       f"\te{i} := {' & '.join(repr_feature_vars(e) for e in r.effects)};"
                       for i, r in enumerate(exp_sketch.rules)])
 
