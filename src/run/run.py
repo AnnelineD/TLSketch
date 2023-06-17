@@ -145,6 +145,10 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
         start_time = time.monotonic_ns()
         for sketch in tqdm(filtered_candidate_sketches):
+            sketch = sketch.simplify()
+            if any(sketch.rules == ws.rules for ws in working_sketches):
+                print("got the case")
+                continue
             sketch_number += 1
             verified = True
             #(time, accepted)
