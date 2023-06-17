@@ -217,7 +217,7 @@ def blocks_on_2_2(time_limit_h):
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 2
-    max_rules = 2
+    max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10] + files_5[:10], generator_params, max_features, max_rules, time_limit_h * 3600)
 
@@ -234,7 +234,7 @@ def gripper_2_2(time_limit_h):
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 2
-    max_rules = 2
+    max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules, time_limit_h * 3600)
 
@@ -252,7 +252,7 @@ def delivery_2_2(time_limit_h):
     complexity = 4
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 2
-    max_rules = 2
+    max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, drexler_instances, generator_params, max_features, max_rules, time_limit_h * 3600)
 
@@ -273,7 +273,7 @@ def miconic_2_2(time_limit_h):
     complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 2
-    max_rules = 2
+    max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, instance_files_2 + instance_files_3 + instance_files_4, generator_params, max_features, max_rules, time_limit_h * 3600)
     run.run_on_multiple_instances(directory, domain_file, instance_files_2[:1], generator_params, max_features, max_rules, time_limit_h * 3600)
@@ -298,7 +298,7 @@ def childsnack_2_2(time_limit_h):
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 2
-    max_rules = 2
+    max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules, time_limit_h * 3600)
 
