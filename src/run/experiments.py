@@ -24,28 +24,6 @@ def blocks_on_1_1():
     run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
 
 
-def blocks_on_2_2():
-    domain_name = "blocks_4_on"
-    directory = f"../../domains/{domain_name}/"
-    domain_file = directory + "domain.pddl"
-
-    files = os.listdir(directory)
-    files = run.sort_files(files)
-    instance_files = list(filter(lambda x: x.startswith('p-'), files))
-    files_3 = list(filter(lambda x: x.startswith('p-3'), files))
-    files_4 = list(filter(lambda x: x.startswith('p-4'), files))
-    files_5 = list(filter(lambda x: x.startswith('p-5'), files))
-
-    complexity = 4
-    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
-    max_features = 2
-    max_rules = 1
-
-    time_limit_h = 24
-
-    run.run_on_multiple_instances(directory, domain_file, files_3[:2] + files_4[:2], generator_params, max_features, max_rules, 7*60)
-
-
 def blocks_clear_1_1():
     domain_name = "blocks_4_clear"
     directory = f"../../domains/{domain_name}/"
@@ -81,6 +59,8 @@ def gripper_1_1():
     max_rules = 1
 
     run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules)
+
+
 
 
 def reward_1_1():
@@ -141,6 +121,7 @@ def miconic_1_1():
     run.run_on_multiple_instances(directory, domain_file, instance_files_2 + instance_files_3 + instance_files_4, generator_params, max_features, max_rules)
 
 
+
 def spanner_1_1():
     domain_name = "spanner"
     directory = f"../../domains/{domain_name}/"
@@ -150,7 +131,7 @@ def spanner_1_1():
     files = run.sort_files(files)
     instance_files = list(filter(lambda x: x.startswith('p-'), files))
 
-    complexity = 6
+    complexity = 8
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
     max_rules = 1
@@ -221,6 +202,108 @@ def childsnack_1_1():
     run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules)
 
 
+def blocks_on_2_2(time_limit_h):
+    domain_name = "blocks_4_on"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    files_3 = list(filter(lambda x: x.startswith('p-3'), files))
+    files_4 = list(filter(lambda x: x.startswith('p-4'), files))
+    files_5 = list(filter(lambda x: x.startswith('p-5'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10] + files_5[:10], generator_params, max_features, max_rules, time_limit_h * 3600)
+
+
+def gripper_2_2(time_limit_h):
+    domain_name = "gripper"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules, time_limit_h * 3600)
+
+
+def delivery_2_2(time_limit_h):
+    domain_name = "delivery"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('instance'), files))
+    drexler_instances = list(filter(lambda x: x.startswith('instance_2'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, drexler_instances, generator_params, max_features, max_rules, time_limit_h * 3600)
+
+
+def miconic_2_2(time_limit_h):
+    domain_name = "miconic"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files_2 = [inst for i in range(2, 5) for inst in list(filter(lambda x: x.startswith(f'p-2-{i}'), files))[:5]]
+    instance_files_3 = [inst for i in range(2, 5) for inst in list(filter(lambda x: x.startswith(f'p-3-{i}'), files))[:5]]
+    instance_files_4 = [inst for i in range(2, 5) for inst in list(filter(lambda x: x.startswith(f'p-4-{i}'), files))[:5]]
+
+    print(len(instance_files_2 + instance_files_3 + instance_files_4))
+
+    complexity = 2
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, instance_files_2 + instance_files_3 + instance_files_4, generator_params, max_features, max_rules, time_limit_h * 3600)
+    run.run_on_multiple_instances(directory, domain_file, instance_files_2[:1], generator_params, max_features, max_rules, time_limit_h * 3600)
+
+
+def childsnack_2_2(time_limit_h):
+    domain_name = "childsnack"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+    # filter all instances with < 10000 states as in Drexler
+    small_state_space = [f"p-2-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
+                       trays in range(1, 3) for seed in range(0, 3)] # + \
+                      # [f"p-3-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
+                      # trays in range(1, 2) for seed in range(0, 5)]
+    used_files = list(filter(lambda x: x in small_state_space, files))
+    print(used_files)
+
+    complexity = 6
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, used_files, generator_params, max_features, max_rules, time_limit_h * 3600)
+
+
+
 
 """https://www.geeksforgeeks.org/finding-duplicate-files-with-python/"""
 def remove_duplicate_domains(path):
@@ -269,9 +352,21 @@ if __name__ == '__main__':
     # blocks_on_1_1()
     # gripper_1_1()
     # delivery_1_1()
-    miconic_1_1()     # TODO
+    # miconic_1_1()
     # reward_1_1()
     # spanner_1_1()
-    # visitall_1_1()    # TODO
-    # childsnack_1_1()  # TODO
+    # visitall_1_1()
+    # childsnack_1_1()
+
+    max_time_h = 24
+
+    # blocks_clear_2_2(max_time_h)
+    blocks_on_2_2(max_time_h)   # TODO
+    # gripper_2_2(max_time_h)     # TODO
+    # delivery_2_2(max_time_h)    # TODO
+    # miconic_2_2(max_time_h)     # TODO
+    # reward_2_2(max_time_h)
+    # spanner_2_2(max_time_h)
+    # visitall_2_2(max_time_h)
+    # childsnack_2_2(max_time_h)  # TODO
 
