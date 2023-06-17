@@ -300,5 +300,8 @@ class Sketch:
     def get_features(self) -> set[Feature]:
         return {f for r in self.rules for f in r.get_features()}
 
+    def simplify(self) -> 'Sketch':
+        return Sketch([r.simplify() for r in self.rules])
+
 
 
