@@ -44,12 +44,7 @@ def show_sketch(s: Sketch):
             feature_repr[f] = f"b_{b}"
             b += 1
 
-    print(feature_repr)
     s = Sketch([r.simplify() for r in s.rules])
-    for r in s.rules:
-        print(r)
-    conditions = ', '.join([latex_condition(c, feature_repr) for c in s.rules[0].conditions])
-    print("cs", conditions)
 
     rules = ["\\{" + ', '.join(latex_condition(c, feature_repr) for c in r.conditions) + "\\}"
              + " \\rightarrow "
@@ -78,8 +73,20 @@ def latex_sketches(sketches: list[Sketch]):
 
 
 if __name__ == '__main__':
-    with open("../../generated/blocksworld/4_4_4_4_4_180_10000_1/rules_1_adam.json") as f:
-        data = json.load(f)
-    sketches = [Sketch.deserialize(s) for s in data["working"]]
+    domains = [("blocksworld", 4),
+               ("blocksworld-on", 4),
+               ("child-snack", 6),
+               ("delivery", 5),
+               ("gripper-strips", 4),
+               ("miconic", 2),
+               ("reward-strips", 2),
+               ("spanner", 6),
+               ("grid-visit-all", 2)]
 
-    print(latex_sketches(sketches))
+    for domain, c in domains:
+        with open(f"../../generated_final/{domain}/{'_'.join([str(c)]*5)}_180_10000_1/rules_1.json") as f:
+            data = json.load(f)
+        sketches = [Sketch.deserialize(s) for s in data["working"]]
+        print(domain)
+        print(latex_sketches(sketches))
+        print('\n \n')
