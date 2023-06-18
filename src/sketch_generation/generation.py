@@ -120,7 +120,8 @@ def generate_rules(boolean_features: list[str], numerical_features: list[str]) -
 
 
 def generate_sketches(boolean_features: list[str], numerical_features: list[str], max_rules=3, max_features=3) -> Iterator[Sketch]:
-    fsets = {s for i in range(1, max_features + 1) for s in get_feature_sets(boolean_features, numerical_features, i)}  # TODO also sets of size < max_features
+    # fsets = {s for i in range(1, max_features + 1) for s in get_feature_sets(boolean_features, numerical_features, i)}  # TODO also sets of size < max_features
+    fsets = {s for s in get_feature_sets(boolean_features, numerical_features, max_features)}  # TODO also sets of size < max_features
     for bfs, nfs in fsets:
         rs = generate_rules(bfs, nfs)
         rs_combs = all_combinations(rs, max_rules)
