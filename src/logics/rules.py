@@ -116,8 +116,8 @@ class SketchRule(Rule):
         return self.get_condition_features().union(self.get_effect_features())
 
     def simplify(self):
-        return SketchRule([c for c in self.conditions if not isinstance(c, CNAny) or isinstance(c, CBAny)],
-                          [e for e in self.effects if not isinstance(e, ENAny) or isinstance(e, EBAny)])
+        return SketchRule([c for c in self.conditions if not (isinstance(c, CNAny) or isinstance(c, CBAny))],
+                          [e for e in self.effects if not (isinstance(e, ENAny) or isinstance(e, EBAny))])
 
     def to_ltl(self, bounds: dict[str, (int, int)]) -> list['LTLRule']:
         # TODO throw error when a numerical feature is missing from the bound dict or if there is a var of wrong type
