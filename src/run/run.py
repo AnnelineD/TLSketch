@@ -137,7 +137,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         changes = set()
         timed_out_sketches = list[(Sketch, int, str)]()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
-        filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
+        filtered_candidate_sketches = filter(lambda s2: not (any(s2.simplify().contains_sketch(s1.simplify()) for s1 in past_sketches)),
                                              candidate_sketches)
         working_sketches = []
         sketch_number = 0
