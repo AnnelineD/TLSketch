@@ -239,7 +239,7 @@ def blocks_on_2_2(time_limit_h):
     max_features = 2
     max_rules = 2
 
-    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10] + files_5[:10], generator_params, max_features, max_rules, time_limit_h * 3600)
+    run.run_on_multiple_instances(directory, domain_file, files_3[:10] + files_4[:10], generator_params, max_features, max_rules, time_limit_h * 3600)
 
 
 def gripper_2_1(time_limit_h):
@@ -273,7 +273,7 @@ def gripper_2_2(time_limit_h):
     max_features = 2
     max_rules = 2
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files, generator_params, max_features, max_rules, time_limit_h * 3600)
+    run.run_on_multiple_instances(directory, domain_file, instance_files[:4], generator_params, max_features, max_rules, time_limit_h * 3600)
 
 
 def delivery_2_2(time_limit_h):
@@ -418,18 +418,18 @@ if __name__ == '__main__':
     # visitall_1_1()
     # childsnack_1_1()
 
-    max_time_h = 12
+    max_time_h = 24
 
-    gripper_2_1(max_time_h)  # TODO
-    # blocks_on_2_1(max_time_h)  # TODO
-    # childsnack_2_1(max_time_h)  # TODO
+    # gripper_2_1(max_time_h)
+    # blocks_on_2_1(max_time_h)
+    # childsnack_2_1(max_time_h)
 
 
     # blocks_clear_2_2(max_time_h)
-    # blocks_on_2_2(max_time_h)
-    # gripper_2_2(max_time_h)
-    # delivery_2_2(max_time_h)
-    # miconic_2_2(max_time_h)
+    blocks_on_2_2(max_time_h)       # todo
+    # gripper_2_2(max_time_h)       # TODO
+    # delivery_2_2(max_time_h)      # TODO
+    # miconic_2_2(max_time_h)       # TODO
     # reward_2_2(max_time_h)
     # spanner_2_2(max_time_h)
     # visitall_2_2(max_time_h)
