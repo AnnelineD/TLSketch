@@ -8,6 +8,7 @@ from ltl import *
 from ..logics.conditions_effects import *
 from ..logics.feature_vars import *
 
+import dlplan.policy as dlpolicy
 
 #Rule = namedtuple("Rule", "conditions effects")
 
@@ -91,7 +92,7 @@ class SketchRule(Rule):
     effects: list[Effect]
 
     @classmethod
-    def from_dlplan_rule(cls, rule: dlplan.Rule):
+    def from_dlplan_rule(cls, rule: dlpolicy.Rule):
         return SketchRule([cond_from_dlplan(c) for c in rule.get_conditions()],
                           [eff_from_dlplan(e) for e in rule.get_effects()])
 
@@ -274,7 +275,7 @@ class Sketch:
         self.rules = rules
 
     @classmethod
-    def from_policy(cls, policy: dlplan.Policy):
+    def from_policy(cls, policy: dlpolicy.Policy):
         return Sketch([SketchRule.from_dlplan_rule(r) for r in policy.get_rules()])
 
     @classmethod

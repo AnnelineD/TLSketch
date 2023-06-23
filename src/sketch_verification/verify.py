@@ -23,6 +23,7 @@ def verification(ltl_sketch, instance, laws) -> bool:
 
 
 def check_file(filecontent: str, laws: list[Law]):
+    # print(filecontent)
     pynusmv.init.init_nusmv()
     try:
         pynusmv.glob.load_from_string(filecontent)

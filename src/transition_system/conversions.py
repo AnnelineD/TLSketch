@@ -7,21 +7,21 @@ from .types import *
 from .transition_system import StateStr
 
 
-def dlvocab_from_tarski(domain_lan: tarski.fol.FirstOrderLanguage, add_goals=True) -> dlplan.VocabularyInfo:
-    v = dlplan.VocabularyInfo()
+def dlvocab_from_tarski(domain_lan: tarski.fol.FirstOrderLanguage, add_goals=True) -> dlplan.core.VocabularyInfo:
+    v = dlplan.core.VocabularyInfo()
     for p in domain_lan.predicates:
         if isinstance(p.name, str):
-            v.add_predicate(str(p.name), p.arity)
+            v.add_predicate(str(p.name), p.arity, False)
             if add_goals:
-                v.add_predicate(str(p.name) + '_g', p.arity)
+                v.add_predicate(str(p.name) + '_g', p.arity, True)
     for c in domain_lan.constants():
         v.add_constant(c.name)
     return v
 
 
-def dlinstance_from_tarski(domain: tarski.fstrips.Problem, instance: tarski.fstrips.Problem) -> dlplan.InstanceInfo:
-    v: dlplan.VocabularyInfo = dlvocab_from_tarski(domain.language)
-    i = dlplan.InstanceInfo(v)
+def dlinstance_from_tarski(domain: tarski.fstrips.Problem, instance: tarski.fstrips.Problem) -> dlplan.core.InstanceInfo:
+    v: dlplan.core.VocabularyInfo = dlvocab_from_tarski(domain.language)
+    i = dlplan.core.InstanceInfo(v)
     d: dict[TSort, list[TConstant]] = sort_constants(instance.language)
     goal = instance.goal
 

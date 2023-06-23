@@ -13,7 +13,7 @@ from collections.abc import Iterator
 
 # method from Drexler code
 def construct_feature_generator():
-    feature_generator = dlplan.FeatureGenerator()
+    feature_generator = dlplan.generator.FeatureGenerator()
     feature_generator.set_generate_concept_distance_numerical(False)
     feature_generator.set_generate_inclusion_boolean(False)
     feature_generator.set_generate_diff_concept(False)

@@ -99,7 +99,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         all_states.append(dlstates)
     print("Done with transition systems")
 
-    factory = dlplan.SyntacticElementFactory(dl_vocab)
+    factory = dlplan.core.SyntacticElementFactory(dl_vocab)
     generator = construct_feature_generator()
 
     cached_generate = cache_to_file(f"../../cache/{domain_name}/features/", lambda x: x,
@@ -116,8 +116,8 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
     @cache_to_file(f"../../cache/{domain_name}/features/{'_'.join(map(str, params))}/", lambda x: x, lambda x: x, lambda x, y, z: f"{z}.json")
     @timer(f"../../cache/{domain_name}/timers/features/{'_'.join(map(str, params))}/", lambda x, y, z: f"{z}.json")
-    def calculate_feature_vals(sts: list[dlplan.State], fs: list[str], filename) -> dict:
-        fact = dlplan.SyntacticElementFactory(sts[0].get_instance_info().get_vocabulary_info()) # TODO why doesn't it work with the given factory?
+    def calculate_feature_vals(sts: list[dlplan.core.State], fs: list[str], filename) -> dict:
+        fact = dlplan.core.SyntacticElementFactory(sts[0].get_instance_info().get_vocabulary_info()) # TODO why doesn't it work with the given factory?
         boolean_features = [fact.parse_boolean(f) for f in fs if f.startswith("b_")]
         numerical_features = [fact.parse_numerical(f) for f in fs if f.startswith("n_")]
 
@@ -137,14 +137,14 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
         changes = set()
         timed_out_sketches = list[(Sketch, int, str)]()
         candidate_sketches = src.sketch_generation.generation.generate_sketches(bools, nums, n, max_features)
-        filtered_candidate_sketches = filter(lambda s2: not (any(s2.simplify().contains_sketch(s1.simplify()) for s1 in past_sketches)),
-                                             candidate_sketches)
+        #filtered_candidate_sketches = filter(lambda s2: not (any(s2.simplify().contains_sketch(s1.simplify()) for s1 in past_sketches)),
+        #                                     candidate_sketches)
         working_sketches = []
         sketch_number = 0
         timings = []
 
         start_time = time.monotonic_ns()
-        for sketch in tqdm(filtered_candidate_sketches):
+        for sketch in tqdm(candidate_sketches):
             sketch = sketch.simplify()
             if any(sketch.rules == ws.rules for ws in working_sketches):
                 print("got the case")
