@@ -1,6 +1,6 @@
 import unittest
 
-from src.logics.conditions_effects import CGreater, EDecr
+from src.logics.conditions_effects import *
 from src.logics.rules import Sketch, SketchRule
 
 
@@ -26,6 +26,21 @@ class SketchTest(unittest.TestCase):
         self.assertTrue(Sketch([r1, r2, r3]).contains_sketch(Sketch([r1, r2])))
 
         self.assertFalse(Sketch([r1, r2, r3]).contains_sketch(Sketch([r1, r4])))
+
+        s_1 = Sketch.deserialize([[[], ["EIncr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')", "EPositive(feature='b_nullary(arm-empty)')"]]])
+        s_2 = Sketch.deserialize([[[], ["EIncr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')", "EPositive(feature='b_nullary(arm-empty)')"]], [[], ["EIncr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')", "ENegative(feature='b_nullary(arm-empty)')"]]])
+        print(s_2.contains_sketch(s_1))
+
+        past_sketches = [s_1]
+        candidate_sketches = [s_2, Sketch.deserialize([[[],["EIncr(feature='f')"]]])]
+        filtered_candidate_sketches = filter(lambda s2: not (any(s2.contains_sketch(s1) for s1 in past_sketches)),
+                                             candidate_sketches)
+
+        print(list(filtered_candidate_sketches))
+
+    def test_simplify(self):
+        s1 = Sketch([SketchRule([CNAny("n"), CBAny("b")], [ENAny("n"), EBAny("b")])])
+        print(s1.simplify())
 
 
 if __name__ == '__main__':

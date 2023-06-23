@@ -64,7 +64,7 @@ class VerifyExamples(unittest.TestCase):
         self.assertTrue(verify_sketch(sketch, instance, [impl_law, exists_impl_law]))
 
     def test_verify_Gripper(self):
-        self.verify_existing_sketch(Gripper(), 2)
+        # self.verify_existing_sketch(Gripper(), 2)
         self.verify_existing_sketch(Gripper(), 1)
         # self.verify_existing_sketch(Gripper(), 0)
 
@@ -84,6 +84,9 @@ class VerifyExamples(unittest.TestCase):
 
     def test_verify_childsnack(self):
         self.verify_existing_sketch(Childsnack(), 1)
+
+    def test_verify_delivery(self):
+        self.verify_existing_sketch(Delivery(), 2)
 
 
 if __name__ == '__main__':

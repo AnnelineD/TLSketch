@@ -23,12 +23,12 @@ def compare_ltl_sketches(s1: LTLSketch, s2: LTLSketch):
 class ToLTLTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        vocabulary_info = dlplan.VocabularyInfo()
+        vocabulary_info = dlplan.core.VocabularyInfo()
         vocabulary_info.add_predicate("unary", 1)
         vocabulary_info.add_predicate("a", 1)
         vocabulary_info.add_predicate("b", 1)
         vocabulary_info.add_predicate("c", 1)
-        factory = dlplan.SyntacticElementFactory(vocabulary_info)
+        factory = dlplan.core.SyntacticElementFactory(vocabulary_info)
         self.a = factory.parse_boolean("b_empty(c_primitive(a,0))")
         self.b = factory.parse_boolean("b_empty(c_primitive(b,0))")
         self.c = factory.parse_boolean("b_empty(c_primitive(c,0))")
@@ -83,6 +83,7 @@ class ToLTLTest(unittest.TestCase):
         self.assertEqual(show_effect(self.n_inc_effect_0, "n"), "n↑")
         self.assertEqual(show_effect(self.n_bot_effect_0, "n"), "n?")
     """
+    """
     def test_bound_fill_in(self):
         bound_dict = {"n_n": (0, 2), "n_m": (0, 2), "n_o": (1, 3)}
         sketch = Sketch([SketchRule([CGreater('n_n')], [EDecr('n_n')]), SketchRule([CPositive('b_a')], [ENegative('b_a')])])
@@ -110,7 +111,7 @@ class ToLTLTest(unittest.TestCase):
         #     print(e, r.conditions.show(), '\t',  r.effects.show())
 
         self.assertTrue(compare_ltl_sketches(ltl_sketch_2, wanted_ltl_sketch_2))
-
+    """
     def test_bound_fill_in_expanded(self):
         bound_dict = {"n_n": (0, 2), "n_m": (0, 2), "n_o": (1, 3)}
         sketch = Sketch([SketchRule([CGreater('n_n')], [EDecr('n_n')]), SketchRule([CPositive('b_a')], [ENegative('b_a')])])

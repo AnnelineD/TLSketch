@@ -5,7 +5,7 @@ import src.transition_system as ts
 
 
 class TransitionSystemTest(unittest.TestCase):
-    v = dlplan.VocabularyInfo()
+    v = dlplan.core.VocabularyInfo()
     v.add_predicate("on", 2)
     v.add_predicate("on_g", 2)
     v.add_predicate("ontable", 1)
@@ -13,7 +13,7 @@ class TransitionSystemTest(unittest.TestCase):
     v.add_predicate("clear", 1)
     v.add_predicate("arm-empty", 0)
 
-    i = dlplan.InstanceInfo(v)
+    i = dlplan.core.InstanceInfo(v)
     i.add_atom("on", ["a", "b"])
     i.add_atom("on", ["b", "a"])
     i.add_atom("ontable", ["a"])
@@ -34,17 +34,17 @@ class TransitionSystemTest(unittest.TestCase):
     a6 = atoms[6]
     a7 = atoms[7]
     a8 = atoms[8]
-    s0 = dlplan.State(i, [a0, a3, a6, a8])
-    s1 = dlplan.State(i, [a1, a2, a7, a8])
-    s2 = dlplan.State(i, [a2, a3, a6, a7, a8])
-    s3 = dlplan.State(i, [a3, a4, a7])
-    s4 = dlplan.State(i, [a2, a5, a6])
+    s0 = dlplan.core.State(i, [a0, a3, a6, a8])
+    s1 = dlplan.core.State(i, [a1, a2, a7, a8])
+    s2 = dlplan.core.State(i, [a2, a3, a6, a7, a8])
+    s3 = dlplan.core.State(i, [a3, a4, a7])
+    s4 = dlplan.core.State(i, [a2, a5, a6])
     states = [s0, s1, s2, s3, s4]
 
     # tm = DLTransitionModel(i, states, 0, [], DirectedGraph())
 
-    f = dlplan.SyntacticElementFactory(v)
-    n_feature: dlplan.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
+    f = dlplan.core.SyntacticElementFactory(v)
+    n_feature: dlplan.core.Numerical = f.parse_numerical("n_count(c_primitive(clear,0))")
     n_feature.set_index(0)
     b_feature = f.parse_boolean("b_empty(c_primitive(holding,0))")
     b_feature.set_index(0)

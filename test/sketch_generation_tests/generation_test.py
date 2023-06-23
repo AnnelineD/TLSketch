@@ -4,7 +4,7 @@ from src.sketch_generation.generation import *
 from math import comb
 from random import randint
 
-Feature = Union[dlplan.Boolean, dlplan.Numerical]
+Feature = Union[dlplan.core.Boolean, dlplan.core.Numerical]
 
 
 class SketchGeneration(unittest.TestCase):
@@ -37,9 +37,10 @@ class SketchGeneration(unittest.TestCase):
         nfs = ["n1"] * number_n
         bfs = ["b1"] * number_b
 
+    """
     def test_n_rules(self):
         print(len(list(generate_rules(['b']*26, ['n']*62))))
-
+    """
 
     def test_condition_generation(self):
         self.assertEqual([[]], list(possible_conditions([], [])))

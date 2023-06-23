@@ -1,4 +1,5 @@
 import dlplan
+from dlplan.policy import *
 
 import src.transition_system as ts
 
@@ -22,16 +23,16 @@ class FromFile:
     def tarski_system(self) -> ts.tarski.TarskiTransitionSystem:
         return ts.tarski.from_instance(self._iproblem)
     """
-    def factory(self) -> dlplan.SyntacticElementFactory:
-        return dlplan.SyntacticElementFactory(self._instance.get_vocabulary_info())
+    def factory(self) -> dlplan.core.SyntacticElementFactory:
+        return dlplan.core.SyntacticElementFactory(self._instance.get_vocabulary_info())
     """
     def dl_system(self) -> ts.dlplan.DLTransitionModel:
         return ts.conversions.tarski_to_dl_system(self.tarski_system(), self._instance)
     """
 
-    def read_sketch(self, file) -> dlplan.Policy:
+    def read_sketch(self, file) -> Policy:
         with open(base_path + file, "r") as f:
-            sketch = dlplan.PolicyReader().read("\n".join(f.readlines()), self.factory())
+            sketch = PolicyReader().read("\n".join(f.readlines()), PolicyBuilder(), self.factory())
         return sketch
 
 
@@ -39,7 +40,7 @@ class BlocksOn(FromFile):
     def __init__(self, instance_file="domains/blocks_4_on/p-3-0.pddl"):
         super().__init__("domains/blocks_4_on/domain.pddl", instance_file)
 
-    def sketch_0(self) -> dlplan.Policy:
+    def sketch_0(self) -> Policy:
         """
         {} → {b1}
         {} → {n0↓}
@@ -62,7 +63,7 @@ class BlocksClear(FromFile):
     def __init__(self, instance_file="domains/blocks_4_clear/p-4-100.pddl"):
         super().__init__("domains/blocks_4_clear/domain.pddl", instance_file)
 
-    def sketch_0(self) -> dlplan.Policy:
+    def sketch_0(self) -> Policy:
         return self.read_sketch("drexler_sketches/blocks-clear/blocks-clear_0.txt")
 
     def sketch_1(self):
@@ -76,28 +77,28 @@ class BlocksClear(FromFile):
 
 
 class Gripper(FromFile):
-    def __init__(self, instance_file="domains/gripper/p-3-0.pddl"):
-        super().__init__("domains/gripper/domain.pddl", instance_file)
+    def __init__(self, instance_file=base_path + "domains/gripper/p-3-0.pddl"):
+        super().__init__(base_path + "domains/gripper/domain.pddl", instance_file)
 
     def sketch_0(self):
-        return self.read_sketch("drexler_sketches/gripper/gripper_0.txt")
+        return self.read_sketch(base_path + "drexler_sketches/gripper/gripper_0.txt")
 
     def sketch_1(self):
-        return self.read_sketch("drexler_sketches/gripper/gripper_1.txt")
+        return self.read_sketch(base_path + "drexler_sketches/gripper/gripper_1.txt")
 
     def sketch_2(self):
-        return self.read_sketch("drexler_sketches/gripper/gripper_2.txt")
+        return self.read_sketch(base_path + "drexler_sketches/gripper/gripper_2.txt")
 
     def sketches(self):
         return [self.sketch_0(), self.sketch_1(), self.sketch_2()]
 
 
 class Childsnack(FromFile):
-    def __init__(self, instance_file="domains/childsnack/p-2-1.0-0.0-1-0.pddl"):
-        super().__init__("domains/childsnack/domain.pddl", instance_file)
+    def __init__(self, instance_file=base_path + "domains/childsnack/p-2-1.0-0.0-1-0.pddl"):
+        super().__init__(base_path + "domains/childsnack/domain.pddl", instance_file)
 
     def sketch_1(self):
-        return self.read_sketch("drexler_sketches/childsnack/childsnack_1.txt")
+        return self.read_sketch(base_path + "drexler_sketches/childsnack/childsnack_1.txt")
 
     def sketches(self):
         return [None, self.sketch_1(), None]
@@ -112,6 +113,20 @@ class Miconic(FromFile):
 
     def sketch_2(self):
         return self.read_sketch("drexler_sketches/miconic/miconic_2.txt")
+
+    def sketches(self):
+        return [None, self.sketch_1(), self.sketch_2()]
+
+
+class Delivery(FromFile):
+    def __init__(self, instance_file=base_path + "domains/delivery/instance_2_1_0.pddl"):
+        super().__init__(base_path + "domains/delivery/domain.pddl", instance_file)
+
+    def sketch_1(self):
+        return self.read_sketch(base_path + "drexler_sketches/delivery/delivery_1.txt")
+
+    def sketch_2(self):
+        return self.read_sketch(base_path + "drexler_sketches/delivery/delivery_2.txt")
 
     def sketches(self):
         return [None, self.sketch_1(), self.sketch_2()]

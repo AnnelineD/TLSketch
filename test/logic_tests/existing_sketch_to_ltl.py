@@ -1,5 +1,6 @@
 import unittest
 import dlplan
+import dlplan.policy as dlpolicy
 import ltl
 import src.transition_system as ts
 from src.logics.conditions_effects import *
@@ -22,7 +23,7 @@ class SketchFromPolicyTest(unittest.TestCase):
         iproblem = ts.load_instance(domain_file, instance_file)
         i = ts.dlinstance_from_tarski(dproblem, iproblem)
 
-        return dlplan.SyntacticElementFactory(i.get_vocabulary_info())
+        return dlplan.core.SyntacticElementFactory(i.get_vocabulary_info())
 
     def test_blocks_clear_(self):
         factory = self.get_factory("domains/blocks_4_clear/domain.pddl",
@@ -32,15 +33,16 @@ class SketchFromPolicyTest(unittest.TestCase):
         {} -> {h, n=}
         {n>0} -> {¬h, n↓}
         """
-        sketch_0: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
+        builder_0 = dlpolicy.PolicyBuilder()
+        sketch_0: dlpolicy.Policy = dlpolicy.PolicyReader().read('(:policy\n'
                                                              '(:boolean_features "b_nullary(arm-empty)")\n'
                                                              '(:numerical_features "n_count(c_primitive(on,0))")\n'
                                                              '(:rule (:conditions ) (:effects (:e_b_pos 0) (:e_n_bot 0)))\n'
                                                              '(:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))\n'
-                                                             ')', factory)
+                                                             ')', builder_0, factory)
 
-        h = sketch_0.get_boolean_features()[0].compute_repr()
-        n = sketch_0.get_numerical_features()[0].compute_repr()
+        h = sketch_0.get_booleans().pop().compute_repr()
+        n = sketch_0.get_numericals().pop().compute_repr()
         sketch = Sketch.from_policy(sketch_0)
 
         wanted_sketch: Sketch = Sketch([
@@ -67,17 +69,19 @@ class SketchFromPolicyTest(unittest.TestCase):
         {} -> {b0}
         {} -> {n0↓}
         """
-        sketch_0: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
+        builder_0 = dlpolicy.PolicyBuilder()
+        sketch_0: dlpolicy.Policy = dlpolicy.PolicyReader().read('(:policy\n'
                                                              '(:boolean_features "b_nullary(arm-empty)" "b_empty(c_and(c_not(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1))),c_primitive(clear,0)))")\n'
                                                              '(:numerical_features "n_count(c_primitive(on,0))")\n'
                                                              '(:rule (:conditions ) (:effects (:e_b_pos 1)))\n'
                                                              '(:rule (:conditions ) (:effects (:e_n_dec 0)))\n'
                                                              '(:rule (:conditions (:c_b_neg 0)) (:effects (:e_b_bot 1) (:e_n_bot 0)))\n'
-                                                             ')', factory)
+                                                             ')', builder_0, factory)
 
-        b0 = sketch_0.get_boolean_features()[0].compute_repr()
-        b1 = sketch_0.get_boolean_features()[1].compute_repr()
-        n = sketch_0.get_numerical_features()[0].compute_repr()
+        booleans = sketch_0.get_booleans()
+        b0 = booleans.pop().compute_repr()
+        b1 = booleans.pop().compute_repr()
+        n = sketch_0.get_numericals().pop().compute_repr()
         sketch = Sketch.from_policy(sketch_0)
 
         wanted_sketch = Sketch([
@@ -90,18 +94,20 @@ class SketchFromPolicyTest(unittest.TestCase):
 
     def test_gripper(self):
         factory = self.get_factory("domains/gripper/domain.pddl", "domains/gripper/p-3-0.pddl")
-        v: dlplan.VocabularyInfo = factory.get_vocabulary_info()
+        v: dlplan.core.VocabularyInfo = factory.get_vocabulary_info()
         v.get_predicates()
 
-        policy_1: dlplan.Policy = dlplan.PolicyReader().read('(:policy\n'
+        builder_1 = dlpolicy.PolicyBuilder()
+        policy_1: dlpolicy.Policy = dlpolicy.PolicyReader().read('(:policy\n'
                                                              '(:boolean_features)\n'
                                                              '(:numerical_features "n_count(c_primitive(at,0))" "n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))")\n'
                                                              '(:rule (:conditions) (:effects (:e_n_dec 1)))\n'
                                                              '(:rule (:conditions) (:effects (:e_n_bot 1) (:e_n_inc 0)))\n'
-                                                             ')', factory)
+                                                             ')', builder_1, factory)
 
-        g = policy_1.get_numerical_features()[0].compute_repr()
-        ga = policy_1.get_numerical_features()[1].compute_repr()
+        numericals = policy_1.get_numericals()
+        g = numericals.pop().compute_repr()
+        ga = numericals.pop().compute_repr()
         sketch_1 = Sketch.from_policy(policy_1)
 
         wanted_sketch_1 = Sketch([
