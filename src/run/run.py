@@ -162,7 +162,7 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
                 starttime = time.monotonic_ns()
                 try:
-                    verified = aresult.get(300)
+                    verified = aresult.get(600)
                     # verified = verify_sketch(sketch, feature_instance, [law1, law2, impl_law])
                     endtime = time.monotonic_ns()
                 except TimeoutError:
@@ -186,9 +186,9 @@ def run_on_multiple_instances(directory: str, domain_file: str, instance_files: 
 
     with Pool(processes=1) as p:
         past_sketches = []
-        for n_rules in range(1, max_rules + 1):
-            working_sketches, *_ = with_n_rules(n_rules, past_sketches, time_limit)
-            past_sketches.extend(working_sketches)
+        #for n_rules in range(1, max_rules + 1):
+        working_sketches, *_ = with_n_rules(max_rules, past_sketches, time_limit)
+        #past_sketches.extend(working_sketches)
 
     print("RESOURCE USAGE", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 

@@ -304,7 +304,7 @@ def miconic_2_2(time_limit_h):
     files = run.sort_files(files)
     instance_files_2 = [inst for i in range(2, 4) for inst in list(filter(lambda x: x.startswith(f'p-2-{i}'), files))[:5]]
     instance_files_3 = [inst for i in range(2, 4) for inst in list(filter(lambda x: x.startswith(f'p-3-{i}'), files))[:5]]
-    instance_files_4 = [inst for i in range(2, 4) for inst in list(filter(lambda x: x.startswith(f'p-4-{i}'), files))[:5]]
+    instance_files_4 = [inst for i in range(2, 3) for inst in list(filter(lambda x: x.startswith(f'p-4-{i}'), files))[:5]]
 
     complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
@@ -425,9 +425,9 @@ if __name__ == '__main__':
 
 
     # blocks_clear_2_2(max_time_h)
-    blocks_on_2_2(max_time_h)       # TODO
-    # gripper_2_2(max_time_h)       # TODO
-    # delivery_2_2(max_time_h)      # TODO
+    # blocks_on_2_2(max_time_h)
+    gripper_2_2(max_time_h)       # TODO
+    # delivery_2_2(max_time_h)
     # miconic_2_2(max_time_h)       # TODO
     # reward_2_2(max_time_h)
     # spanner_2_2(max_time_h)
