@@ -274,7 +274,7 @@ def gripper_2_2(time_limit_h):
     max_features = 2
     max_rules = 2
 
-    run.run_on_multiple_instances(directory, domain_file, instance_files[:3], generator_params, max_features, max_rules, time_limit_h * 3600)
+    run.run_on_multiple_instances(directory, domain_file, instance_files[:2], generator_params, max_features, max_rules, time_limit_h * 3600)
 
 
 def delivery_2_2(time_limit_h):
@@ -303,7 +303,7 @@ def miconic_2_2(time_limit_h):
     files = os.listdir(directory)
     files = run.sort_files(files)
     instance_files_2 = [inst for i in range(2, 4) for inst in list(filter(lambda x: x.startswith(f'p-2-{i}'), files))[:5]]
-    instance_files_3 = [inst for i in range(2, 4) for inst in list(filter(lambda x: x.startswith(f'p-3-{i}'), files))[:5]]
+    instance_files_3 = [inst for i in range(2, 3) for inst in list(filter(lambda x: x.startswith(f'p-3-{i}'), files))[:5]]
     instance_files_4 = [inst for i in range(2, 3) for inst in list(filter(lambda x: x.startswith(f'p-4-{i}'), files))[:5]]
 
     complexity = 2
@@ -432,5 +432,5 @@ if __name__ == '__main__':
     # reward_2_2(max_time_h)
     # spanner_2_2(max_time_h)
     # visitall_2_2(max_time_h)
-    # childsnack_2_2(max_time_h)    # TODO
+    # childsnack_2_2(max_time_h)
     # spanner_0()
