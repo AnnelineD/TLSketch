@@ -189,22 +189,25 @@ def get_num_states(domain_name, instance):
     return len(states)
 
 
-def get_average_good_time_for_common_instances(domain_name, complexity_1, complexity_2) -> tuple[
+def get_total_time_per_good_sketch_for_common_instances(domain_name, complexity_1, complexity_2) -> tuple[
     list[float], list[float]]:
     with open(f"../../generated_final/{domain_name}/{'_'.join([str(complexity_2)] * 5)}_180_10000_2/rules_2.json") as f:
         info_2 = json.load(f)
         good_timings_2 = [t for t in info_2["timings"] if works(t)]
-        instances = info_2["instance_files"]
+        instances_2 = info_2["instance_files"]
 
     with open(f"../../generated_final/{domain_name}/{'_'.join([str(complexity_1)] * 5)}_180_10000_1/rules_1.json") as f:
         info_1 = json.load(f)
         good_timings_1 = [t for t in info_1["timings"] if works(t)]
         instances_1: list[str] = info_1["instance_files"]
 
+    instances = set(instances_2).intersection(set(instances_1))
+
     # For a fair comparison we only want the timings of the instances that we used for both experiments
     total_sketch_times_1 = get_total_time_per_sketch(good_timings_1, [instances_1.index(inst) for inst in instances])
-    total_sketch_times_2 = get_total_time_per_sketch(good_timings_2)
-    return total_sketch_times_1, total_sketch_times_2
+    total_sketch_times_2 = get_total_time_per_sketch(good_timings_2, [instances_2.index(inst) for inst in instances])
+#    return total_sketch_times_1, total_sketch_times_2
+    return [t/len(instances) for t in total_sketch_times_1], [t/len(instances) for t in total_sketch_times_2]
 
 
 def barchart_avg_time_two_experiments():
@@ -216,8 +219,8 @@ def barchart_avg_time_two_experiments():
     domains = (("blocksworld-on", 4, 4), ("delivery", 5, 4), ("gripper-strips", 4, 4), ("miconic", 2, 2))
     names = ["Blocksworld-On", "Delivery", "Gripper", "Miconic"]
 
-    total_sketch_times = [get_average_good_time_for_common_instances(domain_name, complexity_1, complexity_2)
-                for domain_name, complexity_1, complexity_2 in domains]
+    total_sketch_times = [get_total_time_per_good_sketch_for_common_instances(domain_name, complexity_1, complexity_2)
+                          for domain_name, complexity_1, complexity_2 in domains]
 
     total_times_1 = [a[0] for a in total_sketch_times]
     total_times_2 = [a[1] for a in total_sketch_times]
@@ -237,7 +240,7 @@ def barchart_avg_time_two_experiments():
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Average time to check a good sketch (s)')
     ax.set_title('')
-    ax.set_xticks(x + width, names)
+    ax.set_xticks(x + width/2, names)
     ax.legend(loc='upper left', ncols=2)
     #ax.set_ylim(0, 250)
 
@@ -270,6 +273,53 @@ def avg_time_two_experiments_per_instace(domain_name, compl_1, compl_2, title):
     plt.show()
 
 
+def avg_time_two_experiments_per_instace_size(domain_name, compl_1, compl_2, title):
+    timings_1, instances_1 = get_timings_instances(domain_name, compl_1, 1, 1)
+    timings_2, instances_2 = get_timings_instances(domain_name, compl_2, 2, 2)
+
+    working_1 = [t for t in timings_1 if works(t)]
+    working_2 = [t for t in timings_2 if works(t)]
+
+    num_states_1 = [get_num_states(domain_name, inst) for inst in instances_1]
+    num_states_2 = [get_num_states(domain_name, inst) for inst in instances_2]
+
+    #sorted_instances_2 = sorted(instances_2, key=lambda inst: get_num_states(domain_name, inst))
+    #sorted_instances_1 = sorted(instances_1, key=lambda inst: get_num_states(domain_name, inst))
+
+    #instance_1_idx = [instances_1.index(inst) for inst in sorted_instances_1]
+    #instance_2_idx = [instances_2.index(inst) for inst in sorted_instances_2]
+
+    avg_per_instance_1 = [np.mean([sketch[i][0] for sketch in working_1])/1_000_000_000 for i, inst in enumerate(instances_1)]
+    avg_per_instance_2 = [np.mean([sketch[i][0] for sketch in working_2])/1_000_000_000 for i, inst in enumerate(instances_2)]
+
+    zip(num_states_1, avg_per_instance_1)
+    zip(num_states_2, avg_per_instance_2)
+
+    avg_time_per_state_size_1 = {ns: [] for ns, t in zip(num_states_1, avg_per_instance_1)}
+    for ns, t in zip(num_states_1, avg_per_instance_1):
+        avg_time_per_state_size_1[ns].append(t)
+
+    avg_time_per_state_size_2 = {ns: [] for ns, t in zip(num_states_2, avg_per_instance_2)}
+    for ns, t in zip(num_states_2, avg_per_instance_2):
+        avg_time_per_state_size_2[ns].append(t)
+
+    sorted_per_state_size_1 = sorted(avg_time_per_state_size_1.items(), key=lambda x: x[0])
+    y1 = [sum(t) / len(t) for r, t in sorted_per_state_size_1]
+    x1 = [r for r, t in sorted_per_state_size_1]
+
+    sorted_per_state_size_2 = sorted(avg_time_per_state_size_2.items(), key=lambda x: x[0])
+    y2 = [sum(t) / len(t) for r, t in sorted_per_state_size_2]
+    x2 = [r for r, t in sorted_per_state_size_2]
+
+    plt.plot(x1, y1, '-o', label="experiment1")
+    plt.plot(x2, y2, '-o', label="experiment2")
+    plt.xlabel("number of states")
+    plt.ylabel("average time (s)")
+    plt.title(f"{title}")
+    plt.legend()
+    plt.savefig(f"../../figures/per_state_size/{domain_name}.png")
+    plt.show()
+
 
 def add_to_plot_rule_size_time(domain_name, complexity, num_f, num_rules, instance, label):
     with open(
@@ -278,7 +328,6 @@ def add_to_plot_rule_size_time(domain_name, complexity, num_f, num_rules, instan
         sketches = info["working"]
         timings = info["timings"]
         instance_idx: int = info["instance_files"].index(instance)
-
 
         with open(
                 f"../../cache_final/{domain_name}/features/{'_'.join([str(complexity)] * 5)}_180_10000/{instance.removesuffix('.pddl')}.json") as f:
@@ -298,13 +347,13 @@ def add_to_plot_rule_size_time(domain_name, complexity, num_f, num_rules, instan
         # err = [np.std([i for i in idxs[1]]) for idxs in sorted_sorted_rules]
 
         # plt.errorbar(x, y, err, fmt="-X", label=domain_name)
-        plt.plot(x, y, '-o', label=label)
+        plt.plot(x, y, '-o', label=label, zorder=10-num_rules)
 
 
 def plot_rule_size_time_for_domain(domain_name, complexity_1, complexity_2, instance, title):
 
-    add_to_plot_rule_size_time(domain_name, complexity_2, 2, 2, instance, "experiment2")
     add_to_plot_rule_size_time(domain_name, complexity_1, 1, 1, instance, "experiment1")
+    add_to_plot_rule_size_time(domain_name, complexity_2, 2, 2, instance, "experiment2")
 
     plt.legend()
     plt.ylabel("average time (s)")
@@ -382,13 +431,19 @@ if __name__ == '__main__':
     #graph_for_one_instance("delivery", 4, 2, 2, "instance_2_1_0.pddl")
     #graph_for_one_instance("blocksworld-on", 4, 2, 2, "p-3-0.pddl")
 
+    # avg_time_two_experiments_per_instace("blocksworld-on", 4, 4, "Blocksworld-On")
+    # avg_time_two_experiments_per_instace("delivery", 5, 4, "Delivery")
+    # avg_time_two_experiments_per_instace("gripper-strips", 4, 4, "Gripper")
+    # avg_time_two_experiments_per_instace("miconic", 2, 2, "Miconic")
+
     barchart_avg_time_two_experiments()
-
-    avg_time_two_experiments_per_instace("blocksworld-on", 4, 4, "Blocksworld-On")
-    avg_time_two_experiments_per_instace("miconic", 2, 2, "Delivery")
-    avg_time_two_experiments_per_instace("delivery", 5, 4, "Gripper")
-    avg_time_two_experiments_per_instace("gripper-strips", 4, 4, "Miconic")
-
+    #
+    #
+    avg_time_two_experiments_per_instace_size("blocksworld-on", 4, 4, "Blocksworld-On")
+    avg_time_two_experiments_per_instace_size("delivery", 5, 4, "Delivery")
+    avg_time_two_experiments_per_instace_size("gripper-strips", 4, 4, "Gripper")
+    avg_time_two_experiments_per_instace_size("miconic", 2, 2, "Miconic")
+    #
     plot_rule_size_time_for_domain("blocksworld-on", 4, 4, "p-3-0.pddl", "Blocksworld-On")
     plot_rule_size_time_for_domain("delivery", 5, 4, "instance_2_2_0.pddl", "Delivery")
     plot_rule_size_time_for_domain("gripper-strips", 4, 4, "p-2-0.pddl", "Gripper")
