@@ -93,8 +93,8 @@ class SketchRule(Rule):
 
     @classmethod
     def from_dlplan_rule(cls, rule: dlpolicy.Rule):
-        return SketchRule([cond_from_dlplan(c) for c in rule.get_conditions()],
-                          [eff_from_dlplan(e) for e in rule.get_effects()])
+        return SketchRule([Condition.from_dlplan(c) for c in rule.get_conditions()],
+                          [Effect.from_dlplan(e) for e in rule.get_effects()])
 
     @classmethod
     def from_tuple(cls, tup: tuple[list[Condition], list[Effect]]):
