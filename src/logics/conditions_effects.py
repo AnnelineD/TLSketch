@@ -60,43 +60,6 @@ class Condition:
             case _: return "invalid"  # TODO raise error
 
 
-@dataclass(frozen=True)
-class Effect:
-    """
-    Base class for a feature effect (aka feature value change) that can be used in the effects of sketch rules
-    """
-    feature: Feature
-
-    def show(self, feature_repr: dict[Feature, str] = None):
-        """
-        Convert effects to an easily readable and printable string
-        :param feature_repr: For each feature a more readable representation that will be used if provided
-        :return: Compact human-readable representation
-        """
-        r = self.feature if not feature_repr else feature_repr[self.feature]
-        match self:
-            case EPositive(_): return f"b{r}"
-            case ENegative(_): return f"¬b{r}"
-            case EBEqual(_): return f"b{r}="
-            case EBAny(_): return f"b{r}?"
-            case EIncr(_): return f"n{r}↑"
-            case EDecr(_): return f"n{r}↓"
-            case ENEqual(_): return f"n{r}="
-            case ENAny(_): return f"n{r}?"
-            case _: return "invalid"  # TODO raise error
-
-    @classmethod
-    def from_dlplan(cls, e: dlpolicy.BaseEffect) -> Self:
-        match str(e)[:9]:
-            case "(:e_b_pos": return EPositive(e.get_boolean().compute_repr())
-            case "(:e_b_neg": return ENegative(e.get_boolean().compute_repr())
-            case "(:e_b_bot": return EBEqual(e.get_boolean().compute_repr())
-            case "(:e_n_inc": return EIncr(e.get_numerical().compute_repr())
-            case "(:e_n_dec": return EDecr(e.get_numerical().compute_repr())
-            case "(:e_n_bot": return ENEqual(e.get_numerical().compute_repr())
-            case _: return "invalid"  # TODO raise error
-
-
 @dataclass(frozen=True, eq=True)
 class BooleanCondition(Condition):
     """
@@ -109,22 +72,6 @@ class BooleanCondition(Condition):
 class NumericalCondition(Condition):
     """
     Baseclass for numerical feature conditions
-    """
-    feature: Numerical
-
-
-@dataclass(frozen=True, eq=True)
-class BooleanEffect(Effect):
-    """
-    Baseclass for boolean feature effects
-    """
-    feature: Boolean
-
-
-@dataclass(frozen=True, eq=True)
-class NumericalEffect(Effect):
-    """
-    Baseclass for numerical feature effects
     """
     feature: Numerical
 
@@ -175,6 +122,59 @@ class CNAny(NumericalCondition):
     Value of the numerical feature doesn't matter (n?)
     """
     pass
+
+
+@dataclass(frozen=True)
+class Effect:
+    """
+    Base class for a feature effect (aka feature value change) that can be used in the effects of sketch rules
+    """
+    feature: Feature
+
+    def show(self, feature_repr: dict[Feature, str] = None):
+        """
+        Convert effects to an easily readable and printable string
+        :param feature_repr: For each feature a more readable representation that will be used if provided
+        :return: Compact human-readable representation
+        """
+        r = self.feature if not feature_repr else feature_repr[self.feature]
+        match self:
+            case EPositive(_): return f"b{r}"
+            case ENegative(_): return f"¬b{r}"
+            case EBEqual(_): return f"b{r}="
+            case EBAny(_): return f"b{r}?"
+            case EIncr(_): return f"n{r}↑"
+            case EDecr(_): return f"n{r}↓"
+            case ENEqual(_): return f"n{r}="
+            case ENAny(_): return f"n{r}?"
+            case _: return "invalid"  # TODO raise error
+
+    @classmethod
+    def from_dlplan(cls, e: dlpolicy.BaseEffect) -> Self:
+        match str(e)[:9]:
+            case "(:e_b_pos": return EPositive(e.get_boolean().compute_repr())
+            case "(:e_b_neg": return ENegative(e.get_boolean().compute_repr())
+            case "(:e_b_bot": return EBEqual(e.get_boolean().compute_repr())
+            case "(:e_n_inc": return EIncr(e.get_numerical().compute_repr())
+            case "(:e_n_dec": return EDecr(e.get_numerical().compute_repr())
+            case "(:e_n_bot": return ENEqual(e.get_numerical().compute_repr())
+            case _: return "invalid"  # TODO raise error
+
+
+@dataclass(frozen=True, eq=True)
+class BooleanEffect(Effect):
+    """
+    Baseclass for boolean feature effects
+    """
+    feature: Boolean
+
+
+@dataclass(frozen=True, eq=True)
+class NumericalEffect(Effect):
+    """
+    Baseclass for numerical feature effects
+    """
+    feature: Numerical
 
 
 @dataclass(frozen=True, eq=True)
