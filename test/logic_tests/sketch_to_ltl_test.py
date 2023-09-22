@@ -170,13 +170,32 @@ class ToLTLTest(unittest.TestCase):
         wanted_any_cond = ExpandedSketch([ExpandedRule([],
                                                       [BooleanVar(data='b_a', value=True, operator='=')])])
 
-        for r in sketch_no_cond.expand(bound_dict).rules:
+        for r1, r2 in zip(sketch_any_cond.expand(bound_dict).rules, wanted_any_cond.rules):
+            self.assertEqual(r1.conditions, r2.conditions)
+            self.assertEqual(r1.effects, r2.effects)
+
+        sketch_gr_cond = Sketch([SketchRule([CGreater('n_n')], [EPositive('b_a')])])
+        wanted_gr_cond = ExpandedSketch([ExpandedRule([],
+                                                       [BooleanVar(data='b_a', value=True, operator='=')])])
+
+        for r in sketch_gr_cond.expand(bound_dict).rules:
             print(r.conditions, r.effects)
 
         for r1, r2 in zip(sketch_any_cond.expand(bound_dict).rules, wanted_any_cond.rules):
             self.assertEqual(r1.conditions, r2.conditions)
             self.assertEqual(r1.effects, r2.effects)
 
+        sketch_delivery_1 = Sketch([SketchRule([], [ENEqual("n_1"), EDecr("n_0")]),
+                                    SketchRule([CGreater("n_0")], [EIncr("n_1")])])
+
+        for e, r in enumerate(sketch_delivery_1.expand({"n_0": (1, 2), "n_1": (1, 2)}).rules):
+            print(e, r.conditions, r.effects)
+
+        sketch_gripper_1 = Sketch([SketchRule([], [EDecr("n_1")]),
+                                   SketchRule([], [EIncr("n_0"), ENEqual("n_1")])])
+        print("gripper")
+        for e, r in enumerate(sketch_gripper_1.expand({"n_0": (1, 2), "n_1": (1, 2)}).rules):
+            print(e, r.conditions, r.effects)
 
 
 
