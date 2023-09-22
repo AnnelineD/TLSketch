@@ -9,6 +9,7 @@ from math import comb
 import pynusmv
 import tarski.fstrips
 from tqdm import tqdm
+from time import monotonic_ns
 
 import src.transition_system.tarski
 from examples import *
@@ -183,8 +184,133 @@ def check_spanner():
     print(verify_sketch(sketch, instance, [sketch_verification.laws.law2]))
 
 
+def check_blocks_clear():
+    """(:policy
+    (:boolean_features "b_nullary(arm-empty)")
+    (:numerical_features "n_count(c_primitive(on,0))")
+    (:rule (:conditions ) (:effects (:e_b_pos 0) (:e_n_bot 0)))
+    (:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))
+    )"""
+    with open("cache/blocksworld/transition_systems/p-3-0.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[], ["EPositive('b_nullary(arm-empty)')", "ENEqual('n_count(c_primitive(on,0))')"]],
+                                 [["CGreater('n_count(c_primitive(on,0))')"], ["ENegative('b_nullary(arm-empty)')", "EDecr('n_count(c_primitive(on,0))')"]]])
+    with open("cache/blocksworld/features/6_6_6_6_6_180_10000/p-3-0.json") as f:
+        vals = json.load(f)
+
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.impl_law]))
+
+
+def check_blocks_on():
+    """(:policy
+    (:boolean_features "b_nullary(arm-empty)")
+    (:numerical_features "n_count(c_primitive(on,0))")
+    (:rule (:conditions ) (:effects (:e_b_pos 0) (:e_n_bot 0)))
+    (:rule (:conditions (:c_n_gt 0)) (:effects (:e_b_neg 0) (:e_n_dec 0)))
+    )"""
+    with open("cache/blocksworld-on/transition_systems/p-3-1.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[
+        [
+          "CNAny(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')",
+          "CBAny(feature='b_empty(c_some(r_primitive(on_g,0,1),c_primitive(clear,0)))')"
+        ],
+        [
+          "EIncr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')",
+          "EPositive(feature='b_empty(c_some(r_primitive(on_g,0,1),c_primitive(clear,0)))')"
+        ]]])
+    with open("cache/blocksworld-on/features/4_4_4_4_4_180_10000/p-3-1.json") as f:
+        vals = json.load(f)
+
+    print(system.graph.show())
+
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law1]))
+
+
+def check_blocks_on_time_out():
+    t = monotonic_ns()
+    with open("cache/blocksworld-on/transition_systems/p-3-1.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[], ["EIncr(feature='n_count(c_not(c_primitive(clear,0)))')", "EIncr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')"]],
+                                 [[], ["EDecr(feature='n_count(c_not(c_primitive(clear,0)))')", "EDecr(feature='n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))')"]]])
+    with open("cache/blocksworld-on/features/4_4_4_4_4_180_10000/p-3-1.json") as f:
+        vals = json.load(f)
+
+    #print(system.graph.show())
+
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law1, sketch_verification.laws.law2, sketch_verification.laws.impl_law]))
+
+    print(monotonic_ns() - t)
+
+
+def check_gripper_time_out():
+    t = monotonic_ns()
+    with open("cache/gripper-strips/transition_systems/p-3-0.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[["CGreater(feature='n_count(c_all(r_primitive(at,0,1),c_one_of(roomb)))')"], ["ENEqual(feature='n_count(r_primitive(carry,0,1))')", "EIncr(feature='n_count(c_all(r_primitive(at,0,1),c_one_of(roomb)))')"]], [["CGreater(feature='n_count(r_primitive(carry,0,1))')", "CGreater(feature='n_count(c_all(r_primitive(at,0,1),c_one_of(roomb)))')"], ["ENEqual(feature='n_count(c_all(r_primitive(at,0,1),c_one_of(roomb)))')"]]])
+    sketch_2 = Sketch.deserialize([[[], ["EDecr(feature='n_count(c_not(c_projection(r_primitive(at,0,1),0)))')", "EIncr(feature='n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))')"]], [[], ["ENEqual(feature='n_count(c_not(c_projection(r_primitive(at,0,1),0)))')", "EDecr(feature='n_count(c_some(r_primitive(at,0,1),c_one_of(rooma)))')"]]])
+    with open("cache/gripper-strips/features/4_4_4_4_4_180_10000/p-3-0.json") as f:
+        vals = json.load(f)
+
+    #print(system.graph.show())
+
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch_2, instance, [sketch_verification.laws.law1, sketch_verification.laws.law2, sketch_verification.laws.impl_law]))
+
+    print(monotonic_ns() - t)
+
+
+def check_miconic_time_out():
+    t = monotonic_ns()
+    with open("cache/miconic/transition_systems/p-4-3-0.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[], ["EIncr(feature='n_count(c_primitive(boarded,0))')", "EDecr(feature='n_count(r_primitive(origin,0,1))')"]], [[], ["EDecr(feature='n_count(c_primitive(boarded,0))')", "ENEqual(feature='n_count(r_primitive(origin,0,1))')"]]])
+    with open("cache/miconic/features/2_2_2_2_2_180_10000/p-4-3-0.json") as f:
+        vals = json.load(f)
+
+    #print(system.graph.show())
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law1, sketch_verification.laws.law2, sketch_verification.laws.impl_law]))
+
+    print(monotonic_ns() - t)
+
+
+def check_miconic_time_out_2():
+    t = monotonic_ns()
+    with open("cache/miconic/transition_systems/p-2-3-1.json") as f:
+        ts = json.load(f)
+    system = TransitionSystem.deserialize(ts)
+
+    sketch = Sketch.deserialize([[[], ["EDecr(feature='n_count(c_primitive(boarded,0))')", "ENEqual(feature='n_count(r_primitive(origin,0,1))')"]],
+                                 [[], ["ENEqual(feature='n_count(c_primitive(boarded,0))')", "EDecr(feature='n_count(r_primitive(origin,0,1))')"]]])
+    with open("cache/miconic/features/2_2_2_2_2_180_10000/p-4-3-0.json") as f:
+        vals = json.load(f)
+
+    #print(system.graph.show())
+    instance = FeatureInstance(system.graph, system.init, system.goals, vals)
+    print(verify_sketch(sketch, instance, [sketch_verification.laws.law1, sketch_verification.laws.law2, sketch_verification.laws.impl_law]))
+
+    print(monotonic_ns() - t)
+
+
 def print_graphs():
-    with open("cache/spanner/transition_systems/p-3-3-3-0.json") as f:
+    with open("cache/miconic/transition_systems/p-2-2-1.json") as f:
         ts = json.load(f)
     system = GraphSystem.deserialize(ts)
     print(system.graph.show())
@@ -196,9 +322,46 @@ def print_graphs():
     print(system.graph.show())
     """
 
+def find_gripper_sketches_containing_existing():
+    with open("generated_final/gripper-strips/4_4_4_4_4_180_10000_2/rules_2.json") as f:
+        data = json.load(f)
+        sketches = data["working"]
+    i=0
+    for s in sketches:
+        sketch = Sketch.deserialize(s)
+        if all(r.effects == [EIncr("n_count(c_equal(r_primitive(at,0,1),r_primitive(at_g,0,1)))")] for r in sketch.rules):
+            print(s)
+            i += 1
+    print(i)
+
+def find_miconic_sketches_containing_existing():
+    with open("generated_final/miconic/2_2_2_2_2_180_10000_2/rules_2.json") as f:
+        data = json.load(f)
+        sketches = data["working"]
+    i = 0
+    for s in sketches:
+        sketch = Sketch.deserialize(s)
+        if all(r.effects == [EIncr("n_count(c_primitive(served,0))")] for r in sketch.rules):
+            print(s)
+            i += 1
+    print(i)
+
+def find_blocks_on_sketches_containing_existing():
+    with open("generated_final/blocksworld-on/4_4_4_4_4_180_10000_2/rules_2.json") as f:
+        data = json.load(f)
+        sketches = data["working"]
+    i = 0
+    for s in sketches:
+        sketch = Sketch.deserialize(s)
+        if any(r.conditions == [] and r.effects == [EIncr("n_count(c_equal(r_primitive(on,0,1),r_primitive(on_g,0,1)))")] for r in sketch.rules):
+            print(s)
+            i += 1
+    print(i)
 
 
 if __name__ == '__main__':
+    find_blocks_on_sketches_containing_existing()
+
     """
     sketch = Sketch.deserialize([[["CNAny(feature='n_count(c_primitive(clear,0))')"],["EIncr(feature='n_count(c_primitive(clear,0))')"]]])
     sketch_2 = Sketch.deserialize([[["CNAny(feature='n_count(c_and(c_all(r_primitive(on,0,1),c_primitive(on-table,0)),c_primitive(clear_g,0)))')"],
@@ -225,7 +388,7 @@ if __name__ == '__main__':
     instance = FeatureInstance(system.graph, system.init, system.goals, vals)
     print(verify_sketch(sketch_2a, instance, [sketch_verification.laws.law1]))
     """
-    print_graphs()
+
     """
     law = law_test.expand(7)
     ex = exists.expand(7)
