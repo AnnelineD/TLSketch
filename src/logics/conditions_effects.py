@@ -1,7 +1,7 @@
 # Classes to represent feature conditions and feature effects (sometimes called feature value changes) used in sketch
 # rules
 
-from typing import Union, Self
+from typing import Union  # Self only supported from python 3.11
 from dataclasses import dataclass
 
 import dlplan.policy as dlpolicy
@@ -46,7 +46,7 @@ class Condition:
             case _: return "invalid"  # TODO raise error
 
     @classmethod
-    def from_dlplan(cls, c: dlpolicy.BaseCondition) -> Self:
+    def from_dlplan(cls, c: dlpolicy.BaseCondition):  # -> Self:
         """
         Make Condition object from its representation in the DLPlan library
         :param c: A feature condition in its representation from the DLPlan library
@@ -150,7 +150,7 @@ class Effect:
             case _: return "invalid"  # TODO raise error
 
     @classmethod
-    def from_dlplan(cls, e: dlpolicy.BaseEffect) -> Self:
+    def from_dlplan(cls, e: dlpolicy.BaseEffect):  # -> Self:
         match str(e)[:9]:
             case "(:e_b_pos": return EPositive(e.get_boolean().compute_repr())
             case "(:e_b_neg": return ENegative(e.get_boolean().compute_repr())

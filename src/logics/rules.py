@@ -8,7 +8,7 @@
 
 import itertools
 from dataclasses import dataclass
-from typing import Self
+# from typing import Self       # only supported from python 3.11
 
 from ..logics.conditions_effects import Feature, Condition, CGreater, CZero, CPositive, CNegative, CNAny, CBAny, \
     Effect, EPositive, ENegative, EBEqual, EBAny, NumericalEffect, EDecr, EIncr, ENEqual, ENAny
@@ -123,7 +123,7 @@ class SketchRule(Rule):
     # TODO simplify in constructor
 
     @classmethod
-    def from_dlplan_rule(cls, rule: dlpolicy.Rule) -> Self:
+    def from_dlplan_rule(cls, rule: dlpolicy.Rule):  # -> Self
         """
         Convert a sketch rule from the DLPlan library into an object of the SketchRule class
         :param rule: sketch rule represented as a Rule object from the DLPlan library
@@ -133,7 +133,7 @@ class SketchRule(Rule):
                    [Effect.from_dlplan(e) for e in rule.get_effects()])
 
     @classmethod
-    def from_tuple(cls, tup: tuple[list[Condition], list[Effect]]) -> Self:
+    def from_tuple(cls, tup: tuple[list[Condition], list[Effect]]):  # -> Self:
         """
         Construct a sketch rule from a tuple containing the conditions and effects
         :param tup: tuple of conditions and effects
@@ -142,7 +142,7 @@ class SketchRule(Rule):
         return cls(tup[0], tup[1])
 
     @classmethod
-    def deserialize(cls, sr: tuple[list[str], list[str]]) -> Self:
+    def deserialize(cls, sr: tuple[list[str], list[str]]):  # -> Self:
         """
         Construct a sketch rule from a json readable object; a tuple containing feature conditions and feature effects
         in the form of strings
@@ -399,14 +399,14 @@ class Sketch:
         return [r.serialize() for r in self.rules]
 
     @classmethod
-    def deserialize(cls, rs: list[tuple[list[str], list[str]]]) -> Self:
+    def deserialize(cls, rs: list[tuple[list[str], list[str]]]): # -> Self:
         """
         Construct a sketch from a json readable object
         This method is necessary for cashing
         """
         return Sketch([SketchRule.deserialize(r) for r in rs])
 
-    def contains_sketch(self, other: Self) -> bool:
+    def contains_sketch(self, other) -> bool:
         """
         Check whether this sketch contains all rules from another sketch, i.e. check whether self.rules ⊆ other.rules
         :param other: Sketch
@@ -418,7 +418,7 @@ class Sketch:
         """:return: all features used in this sketch"""
         return {f for r in self.rules for f in r.get_features()}
 
-    def simplify(self) -> Self:
+    def simplify(self):  # -> Self:
         """
         Remove all Any conditions and Any effects from the sketch rule since saying that a feature can have any value
         is equivalent to not mentioning that feature at all
