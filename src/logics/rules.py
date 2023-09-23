@@ -49,7 +49,7 @@ class ExpandedRule(Rule):
         :return: Compact human-readable representation
         """
         return f"conditions: {', '.join(map(lambda x: x.show(), self.conditions))}    " \
-               f"effects: {', '.join(map(lambda x: x.show(), self.conditions))}"
+               f"effects: {', '.join(map(lambda x: x.show(), self.effects))}"
 
     def get_features(self) -> set[Feature]:
         """
