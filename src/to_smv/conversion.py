@@ -1,4 +1,4 @@
-from src.logics.rules import LTLSketch, ExpandedSketch
+from src.logics.rules import ExpandedSketch
 #from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
 from src.dlplan_utils import repr_feature
 from ltl import *
