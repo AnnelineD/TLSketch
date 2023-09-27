@@ -1,3 +1,5 @@
+# This file contains named imports of objects that are used over multiple other files
+
 from tarski.syntax.terms import Constant as TConstant
 from tarski.syntax.sorts import Sort as TSort
 from tarski.fstrips.action import Action as TAction
