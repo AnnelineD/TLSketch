@@ -17,7 +17,7 @@ from src.sketch_generation.generation import construct_feature_generator
 from src.file_manager.cashing import cache_to_file
 from src.sketch_verification.feature_instance import FeatureInstance
 from src.sketch_verification.verify import verify_sketch
-from src.sketch_verification.laws import law1, law2, law3, simple_law, impl_law, exists_impl_law
+from src.sketch_verification.laws import law1, law2, impl_law
 import src.file_manager as fm
 from src.transition_system.transition_system import TransitionSystem
 
