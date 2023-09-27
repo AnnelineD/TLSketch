@@ -8,6 +8,11 @@ from pynusmv import prop
 
 
 def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
+    """
+    Translate an LTL formula to a specification that can be used for model-checking with PyNuSMV
+    :param f: an LTL formula
+    :return: the LTL formula as a pynusmv Spec object
+    """
     match f:
         case ltl.Top(): return prop.true()
         case ltl.Bottom(): return prop.false()
@@ -51,6 +56,11 @@ def ltl_to_input(f: ltl.LTLFormula) -> pynusmv.prop.Spec:
 
 
 def ctl_to_input(f: ctl.CTLFormula) -> pynusmv.prop.Spec:
+    """
+    Translate a CTL formula to a specification that can be used for model-checking with PyNuSMV
+    :param f: a CTL formula
+    :return: the CTL formula as a pynusmv Spec object
+    """
     match f:
         case ctl.Top(): return prop.true()
         case ctl.Bottom(): return prop.false()
