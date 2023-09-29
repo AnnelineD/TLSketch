@@ -1,13 +1,19 @@
+# Write graphs, features and sketches in SMV syntax
+
 from src.logics.rules import ExpandedSketch
-#from src.transition_system.dlplan import DLTransitionModel, DLFeatureTransitionModel
-from src.dlplan_utils import repr_feature
 from ltl import *
 from src.logics.feature_vars import *
 from src.transition_system.graph import DirectedGraph
 import ctl
 
 
-def graph_to_smv(graph: DirectedGraph, init_index):
+def graph_to_smv(graph: DirectedGraph, init_index: int) -> str:
+    """
+    Write a directed graph in SMV format
+    :param graph: Directed graph
+    :param init_index: Index of the node in the graph that represents the initial state
+    :return: States and transitions in SMV format
+    """
     assert init_index < graph.size()
     nl = '\n'   # f-strings cannot include backslashes
     return f"VAR \n" \
@@ -18,39 +24,37 @@ def graph_to_smv(graph: DirectedGraph, init_index):
         f"{nl.join(f'''          state = s{i}: {{{ ', '.join(f's{t}' for t in graph.nbs(i)) }}};''' for i in range(graph.size()))}\n" \
         f"                 esac;"
 
-"""
-def transition_system_to_smv(transition_system: DLTransitionModel):
-    return graph_to_smv(transition_system.graph, transition_system.initial_state)
-
-
-def features_to_smv(ts: DLFeatureTransitionModel):
-    tab = '\t'
-    nl = '\n'
-    return f"DEFINE \n " \
-    f"{nl.join(f''' {tab}{repr_feature(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{s.get_index()}: {str(ts.features[fn][s]).upper()};' for s in ts.transition_model.states)} {nl + tab}esac;''' for fn in ts.features.keys())}\n"\
-    f"{tab}goal := state in {{{', '.join({f's{i}' for i in ts.transition_model.goal_states})}}};"
-"""
 
 def valuations_to_smv(vals: dict[str, list[Union[bool, int]]], goals: list[int], features: set[str]) -> str:
+    """
+    Write the values of features in each state in SMV format, and define the goal states
+    :param vals: For each feature its value per state
+    :param goals: The indices of the goal states
+    :param features: The features that one wants to define in SMV format
+    :return: An SMV definition of the features and their values in each state, and a definition of the goal states
+    """
     tab = '\t'
     nl = '\n'
     return f"DEFINE \n " \
            f"{nl.join(f''' {tab}{repr_feature_str(fn)} := case {nl + tab + tab}{(nl + tab + tab).join(f'state = s{e}: {str(s).upper()};' for e, s in enumerate(vals[fn]))} {nl + tab}esac;''' for fn in features)}\n" \
            f"{tab}goal := state in {{{', '.join(f's{i}' for i in goals)}}};"
 
-"""
-def rules_to_smv(rules: list[LTLRule]) -> str:
-    return '\n'.join([f"\tc{i} := {ltl_to_smv(r.conditions)}; \n \te{i} := {ltl_to_smv(r.effects)};" for i, r in enumerate(rules)])
-"""
-
 
 def rules_to_smv(exp_sketch: ExpandedSketch) -> str:
+    """
+    Define the conditions and effects of expanded sketch rules using SMV syntax
+    :param exp_sketch: An expanded sketch
+    :return: SMV definitions as a string
+    """
     return '\n'.join([f"\tc{i} := {' & '.join(repr_feature_vars(c) for c in r.conditions) if r.conditions else 'TRUE'}; \n "
                       f"\te{i} := {' & '.join(repr_feature_vars(e) for e in r.effects)};"
                       for i, r in enumerate(exp_sketch.rules)])
 
 
 def repr_feature_vars(fv: FeatureVar):
+    """
+    Write feature variables in SMV syntax
+    """
     match fv:
         case BooleanVar(f, True, o):
             return repr_feature_str(f)
@@ -59,7 +63,13 @@ def repr_feature_vars(fv: FeatureVar):
         case NumericalVar(f, v, o):
             return f"{repr_feature_str(f)}{o}{v}"
 
+
 def ltl_to_smv(ltl: LTLFormula) -> str:
+    """
+    Write an LTL formula in SMV syntax
+    :param ltl: an LTL formula
+    :return: the LTL formula in SMV syntax as a string
+    """
     match ltl:
         case Top(): return "TRUE"
         case Bottom(): return "FALSE"
@@ -96,6 +106,11 @@ def ltl_to_smv(ltl: LTLFormula) -> str:
 
 
 def ctl_to_smv(f: ctl.CTLFormula) -> str:
+    """
+    Write a CTL formula in SMV syntax
+    :param f: a CTL formula
+    :return: the CTL formula in SMV syntax as a string
+    """
     match f:
         case ctl.Top(): return "TRUE"
         case ctl.Bottom(): return "FALSE"
@@ -119,5 +134,11 @@ def ctl_to_smv(f: ctl.CTLFormula) -> str:
 
 
 #TODO find good representations
-def repr_feature_str(feature: str):
+def repr_feature_str(feature: str) -> str:
+    """
+    Translate a feature representation into a SMV variable name.
+    i.e. Replace characters from a feature string that are not allowed in variable names in SMV syntax
+    :param feature: A feature represented as a string
+    :return: an possible SMV variable name as a string
+    """
     return feature.replace("(", "").replace(")", "").replace(',', '').replace("-", "")
