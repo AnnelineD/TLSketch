@@ -114,8 +114,6 @@ def miconic_1_1():
     instance_files_3 = list(filter(lambda x: x.startswith('p-3-'), files))
     instance_files_4 = list(filter(lambda x: x.startswith('p-4-'), files))
 
-    print(instance_files_2 + instance_files_3 + instance_files_4)
-
     complexity = 2
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
@@ -181,7 +179,6 @@ def spanner_1_1():
             'p-5-5-5-6', 'p-5-5-5-7', 'p-5-5-5-8', 'p-5-5-5-9', 'p-5-5-5-10', 'p-5-5-5-11', 'p-5-5-5-12', 'p-5-5-5-13',
             'p-5-5-5-14', 'p-5-5-5-15', 'p-5-5-5-16', 'p-5-5-5-17', 'p-5-5-5-18', 'p-5-5-5-19']
     used_instances = list(filter(lambda x: x.removesuffix('.pddl') in used, files))
-    print(len(used_instances))
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
     max_features = 1
@@ -237,7 +234,6 @@ def childsnack_1_1():
                         [f"p-3-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
                          trays in range(1, 2) for seed in range(0, 5)]
     used_files = list(filter(lambda x: x in small_state_space, files))
-    print(used_files)
 
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
@@ -381,7 +377,6 @@ def childsnack_2_2(time_limit_h):
     # [f"p-3-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
     # trays in range(1, 2) for seed in range(0, 5)]
     used_files = list(filter(lambda x: x in small_state_space, files))
-    print(used_files)
 
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
@@ -406,7 +401,6 @@ def childsnack_2_1(time_limit_h):
     # [f"p-3-1.0-{gfactor}-{trays}-{seed}.pddl" for gfactor in [0.0, 0.5, 1.0] for
     # trays in range(1, 2) for seed in range(0, 5)]
     used_files = list(filter(lambda x: x in small_state_space, files))
-    print(used_files)
 
     complexity = 6
     generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
@@ -441,7 +435,6 @@ def remove_duplicate_domains(path) -> None:
     duplicateFiles = []
 
     # comparison of the documents
-    print(len(files))
     for file_x in files:
 
         if_dupl = False
