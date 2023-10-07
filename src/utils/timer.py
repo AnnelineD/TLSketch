@@ -1,8 +1,17 @@
+# This file was written with the help of Adam Vandervorst
+
 from os import path, makedirs
 from time import monotonic_ns
 
 
 def timer(filepath, namer):
+    """
+    Times how long it takes to execute a function F, and saves that to a file
+    :param filepath: The directory in which to save the timing file
+    :param namer: Injective function that takes as input the arguments of F and outputs a unique filename that will be
+                  used to save the timing.
+    :return: ???
+    """
     def wrapper(f):
         def timed_f(*args, **kwargs):
             t0 = monotonic_ns()
