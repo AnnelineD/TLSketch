@@ -188,9 +188,9 @@ class SketchRule(Rule):
         for f in options:
             if not options[f]:
                 match f:
-                    case x if x.startswith("n_"):
+                    case x if x.startswith("n"):
                         options[f] = [NumericalVar(f, i, "=") for i in range(bounds[f][0], bounds[f][1] + 1)]
-                    case x if x.startswith("b_"):
+                    case x if x.startswith("b"):
                         options[f] = [BooleanVar(f, True, "="), BooleanVar(f, False, "=")]
                     case _:
                         print("something went wrong while filling in the feature values")  # TODO raise error
