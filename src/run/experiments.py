@@ -271,6 +271,23 @@ def gripper_2_2(time_limit_h):
 
     run.run_on_multiple_instances(directory, domain_file, instance_files[:2], generator_params, max_features, max_rules, time_limit_h * 3600)
 
+def hanoi_3(time_limit_h):
+    global domain_name
+    domain_name = "hanoi2"
+    directory = f"../../domains/{domain_name}/"
+    domain_file = directory + "domain.pddl"
+
+    files = os.listdir(directory)
+    files = run.sort_files(files)
+    instance_files = list(filter(lambda x: x.startswith('p-'), files))
+
+    complexity = 4
+    generator_params = [complexity, complexity, complexity, complexity, complexity, 180, 10000]
+    max_features = 2
+    max_rules = 2
+
+    run.run_on_multiple_instances(directory, domain_file, instance_files[:2], generator_params, max_features, max_rules, time_limit_h * 3600)
+
 
 def delivery_2_2(time_limit_h):
     domain_name = "delivery"
@@ -406,10 +423,13 @@ if __name__ == '__main__':
     # blocks_on_1_1()       # TODO
     # gripper_1_1()         # TODO
     # delivery_1_1()        # TODO
+
     # miconic_1_1()         # TODO
     # reward_1_1()          # TODO
     # spanner_1_1()         # TODO
     # visitall_1_1()        # TODO
+    hanoi_3(1)
+
     # childsnack_1_1()
 
     max_time_h = 24
